@@ -38,6 +38,10 @@ export async function migrate(url: string, log = console.log) {
 if (process.argv[1] && process.argv[1].endsWith("migrate.ts")) {
   const url = process.env.DATABASE_URL;
   if (!url) {
+    if (process.argv.includes("--if-configured")) {
+      console.warn("DATABASE_URL is not set: skipping migrations. The app will report that the database is not configured.");
+      process.exit(0);
+    }
     console.error("DATABASE_URL is required");
     process.exit(1);
   }

@@ -7,7 +7,13 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in" };
 
 export default async function LoginPage() {
-  if (await currentUser()) redirect("/dashboard");
+  let configured = true;
+  try {
+    if (await currentUser()) redirect("/dashboard");
+  } catch (e) {
+    if (e instanceof Error && e.message.includes("DATABASE_URL is not configured")) configured = false;
+    else throw e;
+  }
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -17,7 +23,7 @@ export default async function LoginPage() {
           <p className="text-sm text-muted">Activity documentation with source provenance</p>
         </div>
         <div className="card p-6">
-          <LoginForm />
+          {configured ? <LoginForm /> : <p className="text-sm text-red-700">The database is not configured for this deployment yet. See SETUP.md.</p>}
         </div>
         <p className="mt-4 text-center text-xs text-muted">
           Accounts are created by your administrator. {PRIVACY_NOTICE}

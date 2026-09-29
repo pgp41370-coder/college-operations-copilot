@@ -15,7 +15,7 @@
     "fixtures:load": "tsx scripts/load-pilot-fixtures.ts",
     "postinstall": "node scripts/copy-vendor.mjs",
     "prebuild": "node scripts/copy-vendor.mjs",
-    "vercel-build": "tsx scripts/migrate.ts && next build"
+    "vercel-build": "tsx scripts/migrate.ts --if-configured && next build"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

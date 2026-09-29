@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /** Liveness + database connectivity. Reveals no configuration values. */
 export async function GET() {
-  let database: "connected" | "unavailable" = "unavailable";
+  let database: "connected" | "unavailable" | "not_configured" = process.env.DATABASE_URL ? "unavailable" : "not_configured";
   let migrated = false;
   try {
     const sql = getSql();
@@ -15,7 +15,7 @@ export async function GET() {
     const [t] = await sql<{ n: number }[]>`select count(*)::int as n from templates`;
     migrated = t.n > 0;
   } catch {
-    database = "unavailable";
+    if (database !== "not_configured") database = "unavailable";
   }
   return NextResponse.json(
     { ok: database === "connected" && migrated, database, migrated, ai: aiStatus().mode },
