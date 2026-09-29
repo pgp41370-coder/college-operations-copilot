@@ -58,3 +58,8 @@ next-env.d.ts
 
 # E2E / generated caches
 /.cache/
+
+# Agent skill files installed locally by provider CLIs (not part of the app)
+/.agents/
+/.claude/skills/
+/skills-lock.json

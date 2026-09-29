@@ -86,7 +86,10 @@ function FieldRow({ field, bundle, locked, refresh, attention }: { field: Templa
   const row = bundle.state.fields.find((x) => x.field_key === field.key);
   const cands = bundle.candidates.filter((c) => c.fieldKey === field.key);
   const [editing, setEditing] = useState(false);
-  const [showCands, setShowCands] = useState(row?.status === "conflicting");
+  // Conflicting fields show their source values until the reviewer toggles the
+  // panel; this must also apply when a conflict appears after a later upload.
+  const [toggled, setToggled] = useState<boolean | null>(null);
+  const showCands = toggled ?? row?.status === "conflicting";
   const [draft, setDraft] = useState(row?.value ?? "");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -172,7 +175,7 @@ function FieldRow({ field, bundle, locked, refresh, attention }: { field: Templa
             </div>
           )}
           {cands.length > 0 && (
-            <button className="mt-1 text-xs text-brand underline" onClick={() => setShowCands((s) => !s)}>
+            <button className="mt-1 text-xs text-brand underline" onClick={() => setToggled(!showCands)}>
               {showCands ? "Hide" : "Show"} {cands.length} source value{cands.length > 1 ? "s" : ""}
             </button>
           )}

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import os from "node:os";
 
 const PORT = 3100;
 export const E2E_DB = "college_ops_e2e";
@@ -24,7 +25,16 @@ export default defineConfig({
         command: `npx next start -p ${PORT}`,
         port: PORT,
         reuseExistingServer: false,
-        env: { DATABASE_URL: `postgres://localhost:5432/${E2E_DB}` },
+        // Explicit local user, and blank PG* variables: .env.local may hold a
+        // hosted database's credentials, which must never reach local test runs.
+        env: {
+          DATABASE_URL: `postgres://${os.userInfo().username}@localhost:5432/${E2E_DB}`,
+          DATABASE_URL_UNPOOLED: "",
+          PGUSER: "",
+          PGPASSWORD: "",
+          PGHOST: "",
+          PGDATABASE: "",
+        },
         timeout: 120_000,
       },
 });

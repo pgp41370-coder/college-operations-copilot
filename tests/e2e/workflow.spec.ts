@@ -87,10 +87,12 @@ test.describe.serial("activity documentation workflow", () => {
     activityUrl = page.url().split("?")[0];
 
     await upload(page, "Existing activity report", "report.pdf", "application/pdf", await textPdf(REPORT), /Extracted 1 page/);
-    await upload(page, "Notice", "notice.pdf", "application/pdf", await textPdf(NOTICE), /Extracted 1 page/);
+    const noticeBytes = await textPdf(NOTICE);
+    await upload(page, "Notice", "notice.pdf", "application/pdf", noticeBytes, /Extracted 1 page/);
     await upload(page, "Photograph", "photo.png", "image/png", PNG, /photographs are stored as evidence/);
     // Duplicate upload is rejected.
-    await upload(page, "Notice", "notice-copy.pdf", "application/pdf", await textPdf(NOTICE), /already uploaded/);
+    // Same bytes under another name (pdf-lib embeds a timestamp, so reuse the buffer).
+    await upload(page, "Notice", "notice-copy.pdf", "application/pdf", noticeBytes, /already uploaded/);
     // Invalid type is rejected.
     await upload(page, "Notice", "fake.pdf", "application/pdf", Buffer.from("not a pdf"), /Unsupported file type/);
 
