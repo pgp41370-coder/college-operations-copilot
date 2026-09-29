@@ -51,10 +51,9 @@ Two roles only: faculty (own activities) and administrator (everything). There i
 - Malware scanning.
 - An LLM integration tested against a live model. The adapter is unit-tested with a mocked endpoint only.
 
-## Deployment state (as of 29 Sep 2026)
+## Deployment state (as of 30 Sep 2026)
 
-- The app is deployed to Vercel (Hobby, region bom1) at https://college-operations-copilot.vercel.app. Production serves commit `bcd9075`.
-- Later deployments (commit `6f89224` onward) were **blocked by Vercel** (`TEAM_ACCESS_REQUIRED`: the commit author's GitHub identity is not recognised as a member of the Vercel team). The account owner must connect the GitHub account to the Vercel account, or authorise the deployment in the Vercel dashboard. Until then, the deployed build returns HTTP 500 instead of redirecting to /login when no database is configured. This was fixed in `6f89224` but has not been deployed.
-- **No hosted database is attached yet.** Provisioning one requires the account owner to accept a provider's terms; see SETUP.md §Deployment, step 1.
-- Until a database is attached, the site shows the sign-in page with a "database is not configured" notice, and `/api/health` reports `not_configured`.
-- The full signed-in workflow has been verified only against the production build running locally: Playwright, a local Postgres database, and a real browser. It has **not** yet been verified on the hosted deployment.
+- **Live** at https://college-operations-copilot.vercel.app: Vercel Hobby (region `iad1`) and Neon Postgres Free (`us-east-1`).
+- The signed-in production smoke test passed 24/24 steps. See DEPLOYMENT.md.
+- Production has been exercised only with synthetic documents. Accuracy on real pilot documents is known only from local tests on the two reference packets.
+- Automatic deploy on `git push` is not active yet; deploys are made with the Vercel CLI.

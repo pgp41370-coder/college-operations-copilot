@@ -1,6 +1,6 @@
 # Deployment
 
-Actual production configuration, verified on 30 Sep 2026. **Status: deployed, database connected, NOT yet live.** Signed-in end-to-end testing in production has not been done yet (see "Remaining steps").
+Actual production configuration, verified on 30 Sep 2026. **Status: LIVE.** The signed-in end-to-end smoke test passed 24/24 steps against the production URL, and the results were cross-checked in the production database (see "Production verification").
 
 ## Topology
 
@@ -58,11 +58,35 @@ Accounts are created by an administrator; there is no public sign-up. The first 
 npx tsx --env-file=.env.local scripts/create-user.ts --email you@example.edu --name "Your Name" --role admin
 ```
 
-## Remaining steps before calling the deployment live
+## Production verification (30 Sep 2026)
 
-1. Create the first administrator (command above).
-2. Run the signed-in production smoke test: log in, dashboard, create an activity, upload a PDF and an image, OCR, provenance, date-conflict handling, attendance review, report generation, approval, DOCX/PDF download, and log out. Use synthetic documents only; never upload `reference-data/` to the deployment.
-3. Optional: give the Vercel GitHub App access to the repo so that pushes to `main` deploy automatically (GitHub → Settings → Applications → Vercel → Configure).
+The account owner ran `npx tsx scripts/prod-smoke.mts` against https://college-operations-copilot.vercel.app. Credentials were entered at a hidden prompt, and only synthetic documents were used. **Result: 24/24 steps passed.**
+
+| Area | Verified in production |
+|---|---|
+| Health | `/api/health` and `/api/health/db`: database connected, migrations current, 13/13 tables |
+| Authentication | Signed-out redirect to `/login`; wrong password rejected; admin login; logout closes protected routes again |
+| Authorisation | A second faculty account got a 404 on the admin's activity page and on its export API |
+| Upload | Digital PDF, scanned PDF, PNG and JPG accepted and stored |
+| Extraction / OCR | In-browser OCR on the scanned PDF, the poster PNG and the attendance PNG; text-layer read of the digital PDF; photo stored as evidence only |
+| Provenance | Each value shows its source file, page, deterministic rule and confidence |
+| Conflict | Poster 31/10/2026 vs notice/report/attendance 06/11/2026 flagged as a conflict and not auto-resolved; the reviewer's choice was recorded |
+| Attendance | 7 OCR rows vs 8 stated → mismatch flagged; the reviewer added a row and verified all 8 → PASS |
+| Reports | Activity Report, Detailed Report and Attendance Summary generated |
+| Approval | Human approval recorded (`approved_by`, `approved_at`); activity became read-only |
+| Export | DOCX and PDF downloads opened and validated |
+| Audit | Created, uploaded, extracted, conflict resolved, edited, generated, approved, exported and archived events all present |
+
+Test data left in production (clearly labelled):
+- one archived activity, "[SMOKE TEST] Engineering Drawing Quiz (synthetic)";
+- one deactivated account `smoke-…@smoke-test.invalid`.
+
+The full scripted workflow was also verified locally: 93 Vitest tests and 6 Playwright tests.
+
+## Optional next steps
+
+- Give the Vercel GitHub App access to the repository, so that pushes to `main` deploy automatically (GitHub → Settings → Applications → Vercel → Configure). Until then, deploy with `vercel deploy --prod`.
+- Before loading real pilot data, confirm with the institution that uploading student attendance records is authorised.
 
 ## Deployment history
 
@@ -71,4 +95,5 @@ npx tsx --env-file=.env.local scripts/create-user.ts --email you@example.edu --n
 | 29 Sep 2026 | `bcd9075` | Ready (no database) |
 | 29 Sep 2026 | `6f89224`, `7119b13` | Blocked by Vercel `TEAM_ACCESS_REQUIRED` (commit author not linked to the Vercel account) |
 | 30 Sep 2026 | `0f6d7c7` | Ready, after the owner connected GitHub under Login Connections |
-| 30 Sep 2026 | `660f20d` | **Ready, current production.** Database connected, migrations current, region `iad1` |
+| 30 Sep 2026 | `660f20d` | **Ready, current production.** Database connected, migrations current, region `iad1`. Later commits (`35d5465`, `31fb559`, `bedaf71`, `4e1fc9a`) change only scripts and docs, so the running application is identical. |
+| 30 Sep 2026 | — | Production smoke test 24/24 passed; the deployment is **live** |
