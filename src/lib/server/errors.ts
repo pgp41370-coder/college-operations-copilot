@@ -23,6 +23,9 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
       if (err instanceof AppError) {
         return NextResponse.json({ error: err.message, details: err.details }, { status: err.status });
       }
+      if (err instanceof Error && err.name === "DatabaseNotConfiguredError") {
+        return NextResponse.json({ error: "The database is not configured for this deployment yet." }, { status: 503 });
+      }
       if (err instanceof ZodError) {
         return NextResponse.json(
           { error: "Invalid input.", details: err.issues.map((i) => `${i.path.join(".")}: ${i.message}`) },

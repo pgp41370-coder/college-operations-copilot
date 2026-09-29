@@ -10,7 +10,9 @@ export * from "./auth-core";
 /** Current user from the session cookie, or null. */
 export async function currentUser(): Promise<User | null> {
   const store = await cookies();
-  return userForToken(getSql(), store.get(SESSION_COOKIE)?.value);
+  const token = store.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  return userForToken(getSql(), token);
 }
 
 /** For pages: redirect to /login when signed out. */
@@ -27,6 +29,7 @@ export async function requirePageUser(): Promise<User> {
  */
 export async function requireApiUser(opts: { mutating?: boolean } = { mutating: true }): Promise<User> {
   if (opts.mutating !== false) await assertSameOrigin();
+  if (!process.env.DATABASE_URL) throw new AppError(503, "The database is not configured for this deployment yet.");
   const user = await currentUser();
   if (!user) throw new AppError(401, "Please sign in.");
   return user;

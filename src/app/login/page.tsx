@@ -7,13 +7,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in" };
 
 export default async function LoginPage() {
-  let configured = true;
-  try {
-    if (await currentUser()) redirect("/dashboard");
-  } catch (e) {
-    if (e instanceof Error && e.message.includes("DATABASE_URL is not configured")) configured = false;
-    else throw e;
-  }
+  const configured = !!process.env.DATABASE_URL;
+  if (configured && (await currentUser())) redirect("/dashboard");
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">

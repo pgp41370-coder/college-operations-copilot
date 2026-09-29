@@ -18,12 +18,20 @@ export function createSql(url: string): Sql {
   });
 }
 
+/** Thrown when the deployment has no database configured. */
+export class DatabaseNotConfiguredError extends Error {
+  constructor() {
+    super("DATABASE_URL is not configured. See SETUP.md.");
+    this.name = "DatabaseNotConfiguredError";
+  }
+}
+
 /** Lazily-created shared connection. Throws a clear error when unconfigured. */
 export function getSql(): Sql {
   if (!globalThis.__cocSql) {
     const url = process.env.DATABASE_URL;
     if (!url) {
-      throw new Error("DATABASE_URL is not configured. See SETUP.md.");
+      throw new DatabaseNotConfiguredError();
     }
     globalThis.__cocSql = createSql(url);
   }
