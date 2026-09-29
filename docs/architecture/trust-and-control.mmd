@@ -1,0 +1,32 @@
+%% Page 6 — trust architecture. Every box here is IMPLEMENTED unless marked.
+flowchart TB
+  S["<b>SOURCE DOCUMENT</b><br/>stored unmodified · SHA-256 · private"]:::impl
+  R["<b>RAW EXTRACTION</b><br/>per page · pdf_text or ocr · engine · confidence"]:::impl
+  FC["<b>FIELD CANDIDATE</b>"]:::impl
+  P1["<b>Provenance attached to every candidate</b><br/>source page · exact snippet<br/>method + rule · confidence (rule × OCR)"]:::neutral
+  V["<b>VALIDATION</b><br/>type normalisation · required fields · resolution rules"]:::impl
+  M["MATCH<br/>candidates agree"]:::impl
+  CF["CONFLICT<br/>typed values disagree<br/>→ no value chosen"]:::pending
+  MS["MISSING<br/>no candidate<br/>→ 'Not provided'"]:::pending
+  LC["LOW CONFIDENCE (&lt; 0.8)<br/>→ must be confirmed"]:::pending
+  HRV["👤 <b>HUMAN REVIEW</b><br/>choose · confirm · edit (original kept, audited)"]:::human
+  AV["<b>APPROVED VALUE</b><br/>approved_by · approved_at"]:::human
+  REP["<b>REPORT</b><br/>template text + approved values only"]:::impl
+  S --> R --> FC
+  FC --- P1
+  FC --> V
+  V --> M
+  V --> CF
+  V --> MS
+  V --> LC
+  M --> HRV
+  CF --> HRV
+  MS --> HRV
+  LC --> HRV
+  HRV --> AV --> REP
+  classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c
+  classDef opt fill:#fff4d6,stroke:#b7791f,stroke-width:1.5px,color:#4a2c05
+  classDef future fill:#f3f4f6,stroke:#6b7280,stroke-width:1.5px,stroke-dasharray:6 4,color:#374151
+  classDef human fill:#e3ebfa,stroke:#1f4e8c,stroke-width:2px,color:#0f2649
+  classDef pending fill:#fdecec,stroke:#b42318,stroke-width:1.5px,stroke-dasharray:4 3,color:#7a1a12
+  classDef neutral fill:#ffffff,stroke:#6b7280,stroke-width:1.2px,color:#111827

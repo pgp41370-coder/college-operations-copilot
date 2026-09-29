@@ -1,0 +1,26 @@
+%% Upload + extraction sequence (IMPLEMENTED)
+sequenceDiagram
+  autonumber
+  actor F as Faculty
+  participant UI as Browser UI
+  participant X as pdf.js + tesseract.js
+  participant API as API routes
+  participant S as Services
+  participant DB as Postgres
+  F->>UI: choose file + kind
+  UI->>API: POST …/sources
+  API->>S: validate type, size, hash
+  S->>DB: store file + audit
+  API-->>UI: 201 source id
+  UI->>API: status = processing
+  UI->>X: text layer, else OCR
+  X-->>UI: page text + confidence
+  UI->>API: POST …/extraction
+  API->>S: saveExtraction
+  S->>DB: page text
+  S->>DB: candidates + snippets
+  S->>DB: attendance drafts
+  S->>DB: resolve fields
+  S->>DB: audit + status
+  API-->>UI: result
+  Note over UI,API: On error the browser reports "failed".<br/>Processing over 15 min counts as failed.

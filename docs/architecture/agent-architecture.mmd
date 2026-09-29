@@ -1,0 +1,53 @@
+%% Page 4 — agent operating model. Legend: green = current deterministic service, amber = current optional AI,
+%% grey dashed = PROPOSED future agent (not built), blue = human control point.
+flowchart TB
+  H["👤 <b>Founder / Administrator</b><br/>sets templates, permissions, policies"]:::human
+  ORCH["<b>Orchestration layer</b> — PROPOSED<br/>routes work · cannot approve or bypass the gate"]:::future
+
+  subgraph C["C · PROPOSED FUTURE AGENTS (not built)"]
+    direction LR
+    C1["Intake<br/>Agent"]:::future
+    C2["Document<br/>Understanding Agent"]:::future
+    C3["Extraction<br/>Agent"]:::future
+    C4["Validation<br/>Agent"]:::future
+    C5["Reconciliation<br/>Agent"]:::future
+    C6["Report Composer<br/>Agent"]:::future
+    C7["Follow-up<br/>Agent"]:::future
+    C8["Knowledge<br/>Agent"]:::future
+    C9["Operations<br/>Agent"]:::future
+    C10["QA / Guardrail<br/>Agent"]:::future
+    C11["Audit<br/>Agent"]:::future
+  end
+
+  subgraph B["B · CURRENT OPTIONAL AI CAPABILITY (off by default)"]
+    direction LR
+    B1["LLM-assisted<br/>extraction adapter"]:::opt
+    B2["Grounded-suggestion<br/>check"]:::opt
+    B1 --> B2
+  end
+
+  subgraph A["A · CURRENT DETERMINISTIC SERVICES (implemented)"]
+    direction LR
+    A1["Ingestion &<br/>extraction"]:::impl
+    A2["Provenance"]:::impl
+    A3["Conflict<br/>detection"]:::impl
+    A4["Reconciliation"]:::impl
+    A5["Report<br/>generation"]:::impl
+    A6["Approval<br/>(human-triggered)"]:::impl
+    A1 --> A2 --> A3 --> A4 --> A5 --> A6
+  end
+
+  GUARD["<b>Audit log + readiness gate</b> (implemented)<br/>approval blocked while issues remain"]:::impl
+  HR["👤 <b>HUMAN REVIEW & APPROVAL</b> — always required"]:::human
+
+  H --> ORCH
+  ORCH -. "future: delegates tasks" .-> C
+  C -. "future: proposals only, via service APIs" .-> A
+  B -. "suggestions become candidates" .-> A
+  A --> GUARD --> HR
+  classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c
+  classDef opt fill:#fff4d6,stroke:#b7791f,stroke-width:1.5px,color:#4a2c05
+  classDef future fill:#f3f4f6,stroke:#6b7280,stroke-width:1.5px,stroke-dasharray:6 4,color:#374151
+  classDef human fill:#e3ebfa,stroke:#1f4e8c,stroke-width:2px,color:#0f2649
+  classDef pending fill:#fdecec,stroke:#b42318,stroke-width:1.5px,stroke-dasharray:4 3,color:#7a1a12
+  classDef neutral fill:#ffffff,stroke:#6b7280,stroke-width:1.2px,color:#111827

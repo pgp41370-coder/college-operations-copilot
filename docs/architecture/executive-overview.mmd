@@ -1,0 +1,46 @@
+%% One-page executive view. Green = implemented, amber = optional, grey dashed = proposed, blue = human.
+flowchart TB
+  subgraph INP["INPUTS"]
+    direction LR
+    i1["Activity details<br/>typed by faculty"]:::neutral
+    i2["Notice / poster"]:::neutral
+    i3["Attendance sheet"]:::neutral
+    i4["Photographs"]:::neutral
+    i5["Existing reports /<br/>supporting docs"]:::neutral
+    i1 ~~~ i2 ~~~ i3 ~~~ i4 ~~~ i5
+  end
+  subgraph SV["SERVICES (implemented) · AGENTS (proposed)"]
+    direction LR
+    s1["Ingestion &<br/>browser OCR"]:::impl
+    s2["Deterministic<br/>parser"]:::impl
+    s3["Provenance<br/>store"]:::impl
+    s4["Optional LLM<br/>suggestions"]:::opt
+    s5["Proposed agents<br/>Intake · Document · Extraction<br/>Validation · Report · Knowledge"]:::future
+    s1 ~~~ s2 ~~~ s3 ~~~ s4 ~~~ s5
+  end
+  subgraph VAL["VALIDATION (implemented)"]
+    direction LR
+    v1["Conflict detection"]:::impl
+    v2["Missing-data detection"]:::impl
+    v3["Low-confidence flags"]:::impl
+    v4["Attendance reconciliation"]:::impl
+    v5["Approval gate"]:::impl
+    v1 ~~~ v2 ~~~ v3 ~~~ v4 ~~~ v5
+  end
+  HR["👤 HUMAN REVIEW & APPROVAL — faculty choose, confirm, edit, approve"]:::human
+  subgraph OUT["OUTPUTS (implemented)"]
+    direction LR
+    o1["Activity Report<br/>DOCX / PDF"]:::impl
+    o2["Detailed Report<br/>DOCX / PDF"]:::impl
+    o3["Attendance Summary<br/>PDF / CSV"]:::impl
+    o4["Evidence package<br/>packet PDF · ZIP · manifest"]:::impl
+    o5["Audit trail"]:::impl
+    o1 ~~~ o2 ~~~ o3 ~~~ o4 ~~~ o5
+  end
+  INP --> SV --> VAL --> HR --> OUT
+  classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c
+  classDef opt fill:#fff4d6,stroke:#b7791f,stroke-width:1.5px,color:#4a2c05
+  classDef future fill:#f3f4f6,stroke:#6b7280,stroke-width:1.5px,stroke-dasharray:6 4,color:#374151
+  classDef human fill:#e3ebfa,stroke:#1f4e8c,stroke-width:2px,color:#0f2649
+  classDef pending fill:#fdecec,stroke:#b42318,stroke-width:1.5px,stroke-dasharray:4 3,color:#7a1a12
+  classDef neutral fill:#ffffff,stroke:#6b7280,stroke-width:1.2px,color:#111827

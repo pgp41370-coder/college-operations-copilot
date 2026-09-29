@@ -1,0 +1,41 @@
+%% Agent map — org chart of the proposed AI workforce and its current software counterparts.
+flowchart TB
+  F["👤 <b>Founder / Administrator</b><br/>HUMAN IN CONTROL"]:::human
+  FAC["👤 <b>Faculty reviewer / approver</b><br/>HUMAN IN CONTROL"]:::human
+  O["<b>Orchestrator Agent</b><br/>PROPOSED"]:::future
+  subgraph EV["Evidence"]
+    direction TB
+    I["<b>Intake Agent</b> · PROPOSED<br/>now: Create Activity form + upload validation"]:::future
+    D["<b>Document Understanding Agent</b> · PROPOSED<br/>now: user selects document kind"]:::future
+    E["<b>Extraction Agent</b> · PROPOSED<br/>now: browser OCR + deterministic parser"]:::future
+    I ~~~ D ~~~ E
+  end
+  subgraph AS["Assurance"]
+    direction TB
+    V["<b>Validation Agent</b> · PROPOSED<br/>now: normalisation + resolution rules"]:::future
+    R["<b>Reconciliation Agent</b> · PROPOSED<br/>now: reconciliation service"]:::future
+    Q["<b>QA / Guardrail Agent</b> · PROPOSED<br/>now: readiness gate"]:::future
+    A["<b>Audit Agent</b> · PROPOSED<br/>now: audit log + manifest"]:::future
+    V ~~~ R ~~~ Q ~~~ A
+  end
+  subgraph OU["Output & operations"]
+    direction TB
+    RP["<b>Report Composer Agent</b> · PROPOSED<br/>now: template report engine"]:::future
+    FU["<b>Follow-up Agent</b> · PROPOSED<br/>now: none"]:::future
+    K["<b>Knowledge Agent</b> · PROPOSED<br/>now: none (Phase 2)"]:::future
+    OP["<b>Operations Agent</b> · PROPOSED<br/>now: none"]:::future
+    RP ~~~ FU ~~~ K ~~~ OP
+  end
+  F --> O
+  O -.-> EV
+  O -.-> AS
+  O -.-> OU
+  EV -. "proposals" .-> FAC
+  AS -. "findings" .-> FAC
+  OU -. "drafts" .-> FAC
+  classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c
+  classDef opt fill:#fff4d6,stroke:#b7791f,stroke-width:1.5px,color:#4a2c05
+  classDef future fill:#f3f4f6,stroke:#6b7280,stroke-width:1.5px,stroke-dasharray:6 4,color:#374151
+  classDef human fill:#e3ebfa,stroke:#1f4e8c,stroke-width:2px,color:#0f2649
+  classDef pending fill:#fdecec,stroke:#b42318,stroke-width:1.5px,stroke-dasharray:4 3,color:#7a1a12
+  classDef neutral fill:#ffffff,stroke:#6b7280,stroke-width:1.2px,color:#111827

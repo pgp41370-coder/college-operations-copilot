@@ -66,6 +66,14 @@ packet PDF + ZIP assembled in browser  ◀────  authenticated file endpo
 
 Details are in [ARCHITECTURE.md](ARCHITECTURE.md).
 
+**Architecture & agent design package** (implementation status marked throughout), rebuilt with `npm run docs:build`:
+
+- [Architecture (PDF, 12 pp)](docs/College_Operations_Copilot_Architecture.pdf) · [source](docs/College_Operations_Copilot_Architecture.md)
+- [Agent Handbook (PDF, 7 pp)](docs/College_Operations_Copilot_Agent_Handbook.pdf) · [source](docs/College_Operations_Copilot_Agent_Handbook.md)
+- [System Design (PDF, 9 pp)](docs/College_Operations_Copilot_System_Design.pdf) · [source](docs/College_Operations_Copilot_System_Design.md)
+- [Architecture on one page (PDF)](docs/College_Operations_Copilot_Architecture_OnePage.pdf)
+- Diagrams: [`docs/architecture/`](docs/architecture/) — Mermaid sources, SVGs, and presentation PNGs
+
 ## 5. Tech stack
 
 - **App:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4

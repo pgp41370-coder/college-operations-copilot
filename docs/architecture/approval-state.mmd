@@ -1,0 +1,16 @@
+%% Activity status model — mirrors computeState()/refreshStatus() in src/lib/server/activities.ts (IMPLEMENTED)
+stateDiagram-v2
+  direction TB
+  [*] --> DRAFT: activity created
+  DRAFT --> PROCESSING: extraction started
+  PROCESSING --> DRAFT: finished, no reports yet
+  PROCESSING --> REVIEW_REQUIRED: finished, reports exist
+  DRAFT --> REVIEW_REQUIRED: reports generated, issues remain
+  DRAFT --> READY_FOR_APPROVAL: reports generated, no issues
+  REVIEW_REQUIRED --> READY_FOR_APPROVAL: zero blocking issues, fresh reports
+  READY_FOR_APPROVAL --> REVIEW_REQUIRED: edit makes reports stale
+  READY_FOR_APPROVAL --> APPROVED: human approves
+  APPROVED --> ARCHIVED: owner or admin archives
+  REVIEW_REQUIRED --> ARCHIVED: archived
+  APPROVED --> REVIEW_REQUIRED: admin reopens with reason
+  ARCHIVED --> REVIEW_REQUIRED: admin reopens with reason

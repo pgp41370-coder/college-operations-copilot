@@ -1,0 +1,16 @@
+%% Database entities (db/migrations/001_init.sql) — all IMPLEMENTED.
+erDiagram
+  users ||--o{ sessions : has
+  users ||--o{ activities : owns
+  templates ||--o{ activities : "version used by"
+  activities ||--o{ sources : has
+  sources ||--|| source_blobs : "original bytes"
+  sources ||--o{ source_extractions : "text per page"
+  activities ||--o{ field_candidates : has
+  sources ||--o{ field_candidates : "evidence for"
+  activities ||--o{ activity_fields : "resolved values"
+  field_candidates |o--o{ activity_fields : "chosen candidate"
+  activities ||--o{ attendance_records : has
+  activities ||--o{ generated_reports : "versions"
+  activities |o--o{ audit_logs : "history"
+  users |o--o{ audit_logs : actor

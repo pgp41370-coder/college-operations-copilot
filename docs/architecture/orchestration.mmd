@@ -1,0 +1,18 @@
+%% Page 8 — PROPOSED future agent orchestration. Grey dashed = not built.
+%% Green = existing deterministic gate the orchestrator must pass through. Blue = human.
+flowchart TB
+  IN["User uploads<br/>notice · attendance · photographs"]:::human --> ORC["ORCHESTRATOR AGENT<br/>(proposed)"]:::future
+  subgraph PIPE["Proposed agent pipeline — each step writes PROPOSALS only"]
+    direction LR
+    DA["Document<br/>Understanding Agent"]:::future --> EA["Extraction Agent<br/>OCR + fields"]:::future --> VA["Validation<br/>Agent"]:::future --> RA["Reconciliation<br/>Agent"]:::future --> RC["Report Composer<br/>Agent"]:::future --> QA["QA / Guardrail<br/>Agent"]:::future
+  end
+  ORC --> PIPE
+  PIPE --> GATE["EXISTING readiness gate + provenance rules<br/>(implemented, deterministic — cannot be bypassed)"]:::impl
+  GATE --> HR["👤 HUMAN REVIEW"]:::human --> AP["👤 APPROVAL<br/>authenticated user only"]:::human --> OUT["Export + audit"]:::impl
+  GATE -. "blocking issue" .-> HR
+  classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c
+  classDef opt fill:#fff4d6,stroke:#b7791f,stroke-width:1.5px,color:#4a2c05
+  classDef future fill:#f3f4f6,stroke:#6b7280,stroke-width:1.5px,stroke-dasharray:6 4,color:#374151
+  classDef human fill:#e3ebfa,stroke:#1f4e8c,stroke-width:2px,color:#0f2649
+  classDef pending fill:#fdecec,stroke:#b42318,stroke-width:1.5px,stroke-dasharray:4 3,color:#7a1a12
+  classDef neutral fill:#ffffff,stroke:#6b7280,stroke-width:1.2px,color:#111827

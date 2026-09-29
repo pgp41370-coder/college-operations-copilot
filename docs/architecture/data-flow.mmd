@@ -1,0 +1,22 @@
+%% Page 7 — information lifecycle as implemented (order matches the code: reports are generated
+%% before approval so the approver signs off on an exact report version).
+flowchart TB
+  subgraph R1[" "]
+    direction LR
+    S1["1 · SOURCE<br/>notice · poster · attendance · photos · reports"]:::neutral --> S2["2 · INGEST<br/>validate · hash · store"]:::impl --> S3["3 · EXTRACT<br/>text layer / OCR (browser)"]:::impl --> S4["4 · NORMALISE<br/>dates · times · counts · text keys"]:::impl
+  end
+  subgraph R2[" "]
+    direction LR
+    S5["5 · VALIDATE<br/>resolve candidates · conflicts · missing"]:::impl --> S6["6 · RECONCILE<br/>stated counts vs attendance"]:::impl --> S7["7 · REVIEW<br/>faculty choose / confirm / edit"]:::human --> S8["8 · GENERATE<br/>draft reports from template"]:::impl
+  end
+  subgraph R3[" "]
+    direction LR
+    S9["9 · APPROVE<br/>gate: zero blocking issues"]:::human --> S10["10 · EXPORT<br/>DOCX · PDF · CSV · manifest · packet · ZIP"]:::impl --> S11["11 · AUDIT<br/>append-only log of every step"]:::impl
+  end
+  R1 --> R2 --> R3
+  classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c
+  classDef opt fill:#fff4d6,stroke:#b7791f,stroke-width:1.5px,color:#4a2c05
+  classDef future fill:#f3f4f6,stroke:#6b7280,stroke-width:1.5px,stroke-dasharray:6 4,color:#374151
+  classDef human fill:#e3ebfa,stroke:#1f4e8c,stroke-width:2px,color:#0f2649
+  classDef pending fill:#fdecec,stroke:#b42318,stroke-width:1.5px,stroke-dasharray:4 3,color:#7a1a12
+  classDef neutral fill:#ffffff,stroke:#6b7280,stroke-width:1.2px,color:#111827

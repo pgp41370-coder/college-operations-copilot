@@ -15,7 +15,8 @@
     "fixtures:load": "tsx scripts/load-pilot-fixtures.ts",
     "postinstall": "node scripts/copy-vendor.mjs",
     "prebuild": "node scripts/copy-vendor.mjs",
-    "vercel-build": "tsx scripts/migrate.ts --if-configured && next build"
+    "vercel-build": "tsx scripts/migrate.ts --if-configured && next build",
+    "docs:build": "tsx scripts/docs/build-docs.mts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -39,6 +40,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "marked": "^18.0.14",
+    "mermaid": "^12.0.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",

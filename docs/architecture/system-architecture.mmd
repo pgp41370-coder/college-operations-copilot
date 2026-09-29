@@ -1,0 +1,56 @@
+%% College Operations Copilot — system architecture (CURRENT IMPLEMENTATION)
+%% Legend (rendered beside the figure): green = implemented, amber = optional/off by default, blue = human control point.
+%% Derived from src/ at commit 7119b13. Solid arrows = request/data flow; dotted = optional path.
+flowchart TB
+  USER["👤 <b>Faculty / Administrator</b><br/>authenticated user — reviews and approves"]:::human
+
+  subgraph BROWSER["BROWSER — Next.js client"]
+    direction LR
+    UI["<b>Workflow UI</b><br/>7-tab activity workspace"]:::impl
+    BX["<b>Browser extraction</b><br/>pdf.js text · tesseract.js OCR"]:::impl
+    PK["<b>Packet PDF + evidence ZIP</b>"]:::impl
+    UI --> BX
+    UI --> PK
+  end
+
+  subgraph EDGE["SERVER — Vercel serverless route handlers"]
+    direction LR
+    API["<b>API layer</b><br/>20 route files · session · same-origin · zod · rate limits"]:::impl
+    AI["<b>Optional LLM adapter</b><br/>grounded-quote check<br/>OFF by default"]:::opt
+    API -. "only if configured" .-> AI
+  end
+
+  subgraph CORE["APPLICATION CORE — deterministic services (server)"]
+    direction TB
+    subgraph EVID["Evidence & provenance"]
+      direction LR
+      ING["<b>Upload validation</b><br/>type · size · hash"]:::impl
+      PAR["<b>Deterministic parser</b><br/>template rules"]:::impl
+      PROV["<b>Provenance store</b><br/>page · snippet · rule"]:::impl
+      CON["<b>Conflict</b><br/>detection"]:::impl
+      ING --> PAR --> PROV --> CON
+    end
+    subgraph DEC["Decision & output"]
+      direction LR
+      REC["<b>Attendance</b><br/>reconciliation"]:::impl
+      GATE["<b>Approval gate</b><br/>blocks on open issues"]:::impl
+      REP["<b>Report engine</b><br/>template only"]:::impl
+      EXP["<b>Export layer</b><br/>DOCX · PDF · CSV · JSON"]:::impl
+      AUD["<b>Audit logger</b><br/>every change"]:::impl
+      REC --> GATE --> REP --> EXP
+      EXP ~~~ AUD
+    end
+    EVID --> DEC
+  end
+
+  DB[("<b>PostgreSQL</b> — 13 tables<br/>documents · extractions · candidates<br/>fields · attendance · reports · audit")]:::impl
+
+  USER -- "uses" --> BROWSER
+  BROWSER -- "HTTPS" --> EDGE
+  EDGE -- "validated requests · grounded suggestions" --> CORE
+  CORE -- "parameterised SQL" --> DB
+
+  classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c
+  classDef opt fill:#fff4d6,stroke:#b7791f,stroke-width:1.5px,color:#4a2c05
+  classDef future fill:#f3f4f6,stroke:#6b7280,stroke-width:1.5px,stroke-dasharray:6 4,color:#374151
+  classDef human fill:#e3ebfa,stroke:#1f4e8c,stroke-width:2px,color:#0f2649
