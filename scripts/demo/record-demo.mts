@@ -4,11 +4,16 @@
  *
  *   npm run build && npx tsx scripts/demo/make-demo-docs.mts && npx tsx scripts/demo/record-demo.mts
  *
- * Output: demo/College_Operations_Copilot_Demo.webm and demo/output/* (every generated file).
+ * Output: demo/College_Operations_Copilot_Demo.mp4 (H.264 + AAC) and .webm (VP9 + Opus)
+ * with a spoken voice-over, plus demo/output/* (every generated file).
+ *
+ * Requires macOS `say` (built in) and ffmpeg (`brew install ffmpeg`).
+ * Voice and speed: DEMO_VOICE (default "Samantha"; e.g. "Rishi" or "Tara" for
+ * Indian English) and DEMO_RATE (words per minute, default 182).
  */
 import { spawn, execFileSync, type ChildProcess } from "node:child_process";
-import { randomBytes } from "node:crypto";
-import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { chromium, type Locator, type Page } from "@playwright/test";
@@ -134,9 +139,53 @@ const OVERLAY_JS = String.raw`(() => {
 
 let page: Page;
 const hold = (ms: number) => page.waitForTimeout(ms);
+
+// ---------------------------------------------------------------- narration
+// Voice-over generated offline with macOS `say` (free, local). Each line is
+// timed against the recording so ffmpeg can place it exactly.
+const VOICE = process.env.DEMO_VOICE ?? "Samantha";
+const RATE = process.env.DEMO_RATE ?? "182";
+const AUDIO_DIR = path.join(ROOT, "demo", ".audio");
+let t0 = 0;
+const narration: { file: string; startMs: number }[] = [];
+
+function spoken(text: string): string {
+  return text
+    .replace(/→/g, " to ")
+    .replace(/—/g, ", ")
+    .replace(/\b31 Oct 2026\b/g, "31st October 2026")
+    .replace(/\b6 Nov 2026\b/g, "6th November 2026")
+    .replace(/\bOCR\b/g, "O.C.R.")
+    .replace(/\bDOCX\b/g, "Word")
+    .replace(/\bCSV\b/g, "C.S.V.")
+    .replace(/\bJSON\b/g, "JSON")
+    .replace(/\bPDF\b/g, "P.D.F.")
+    .replace(/\bZIP\b/g, "zip")
+    .replace(/\bHoD\b/g, "H.O.D.")
+    .replace(/(\d+)%/g, "$1 percent")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function synth(text: string): { file: string; ms: number } {
+  mkdirSync(AUDIO_DIR, { recursive: true });
+  const say = spoken(text);
+  const file = path.join(AUDIO_DIR, `${createHash("sha1").update(`${VOICE}|${RATE}|${say}`).digest("hex").slice(0, 16)}.aiff`);
+  if (!existsSync(file)) execFileSync("say", ["-v", VOICE, "-r", RATE, "-o", file, say]);
+  const dur = execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file], { encoding: "utf8" });
+  return { file, ms: Math.round(Number(dur) * 1000) };
+}
+
+/** Starts a narration line now and waits at least until it has finished. */
+async function speak(text: string, minMs = 0) {
+  const { file, ms } = synth(text);
+  narration.push({ file, startMs: Date.now() - t0 });
+  await hold(Math.max(minMs, ms + 450));
+}
+
 async function caption(text: string, ms = 2600) {
   await page.evaluate((t) => (window as unknown as { __setCaption?: (t: string) => void }).__setCaption?.(t), text).catch(() => {});
-  await hold(ms);
+  await speak(text, ms);
 }
 async function moveTo(loc: Locator) {
   await loc.scrollIntoViewIfNeeded();
@@ -199,11 +248,12 @@ async function main() {
   });
   await context.addInitScript({ content: OVERLAY_JS });
   page = await context.newPage();
+  t0 = Date.now();
   page.on("dialog", (d) => d.accept());
   try {
     // ---------------------------------------------------------------- intro
     await page.setContent(card("College Operations Copilot", "Activity Documentation Automation for colleges.<br><br>This demo runs the full workflow on <b>synthetic documents</b> (no real students, no real records): evidence upload → OCR & extraction with provenance → conflict detection → attendance reconciliation → report generation → faculty approval → exports."));
-    await hold(5500);
+    await speak("College Operations Copilot. Activity documentation automation for colleges. This demo runs the full workflow on synthetic documents: evidence upload, text extraction with provenance, conflict detection, attendance reconciliation, report generation, faculty approval, and exports.", 5500);
 
     // ---------------------------------------------------------------- login
     await page.goto(`${BASE}/login`);
@@ -340,18 +390,38 @@ async function main() {
       • Activity Report, Detailed Report, Attendance Summary, packet PDF, DOCX, CSV, manifest and ZIP<br>
       • Human-only approval with a complete audit trail<br><br>
       <span style="color:#fecaca">All documents in this video are synthetic demo data, recorded on a local build.</span>`));
-    await hold(7000);
+    await speak("To recap: every value was traced to a source page, the date conflict and the attendance mismatch were surfaced and resolved by a person, and approval stayed with the faculty member, with a complete audit trail. All documents in this video are synthetic demo data.", 7000);
+    await hold(1500);
   } finally {
     const video = page.video();
     await context.close();
     await browser.close();
     server.kill();
     if (video) {
-      const src = await video.path();
-      renameSync(src, path.join(ROOT, "demo", "College_Operations_Copilot_Demo.webm"));
+      const silent = path.join(ROOT, "demo", "College_Operations_Copilot_Demo_silent.webm");
+      renameSync(await video.path(), silent);
+      muxNarration(silent);
     }
     rmSync(VIDEO_DIR, { recursive: true, force: true });
   }
+}
+
+/** Mixes every narration line at its recorded offset and muxes it with the video (MP4 + WebM). */
+function muxNarration(silentVideo: string) {
+  writeFileSync(path.join(ROOT, "demo", "narration.json"), JSON.stringify(narration, null, 2));
+  const inputs = narration.flatMap((n) => ["-i", n.file]);
+  const delays = narration.map((n, i) => `[${i + 1}:a]aresample=48000,aformat=channel_layouts=stereo,adelay=${n.startMs}|${n.startMs}[a${i}]`);
+  const mix = `${narration.map((_, i) => `[a${i}]`).join("")}amix=inputs=${narration.length}:normalize=0:dropout_transition=0,volume=1.6[aout]`;
+  const graph = [...delays, mix].join(";");
+  const mp4 = path.join(ROOT, "demo", "College_Operations_Copilot_Demo.mp4");
+  const webm = path.join(ROOT, "demo", "College_Operations_Copilot_Demo.webm");
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", silentVideo, ...inputs, "-filter_complex", graph,
+    "-map", "0:v", "-map", "[aout]", "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", "-shortest", mp4]);
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", mp4, "-c:v", "libvpx-vp9", "-crf", "34", "-b:v", "0", "-row-mt", "1",
+    "-c:a", "libopus", "-b:a", "96k", webm]);
+  rmSync(silentVideo, { force: true });
+  console.log(`narration lines: ${narration.length}; wrote ${path.relative(ROOT, mp4)} and ${path.relative(ROOT, webm)}`);
 }
 
 /** Shows the generated files in the video: rendered PDF pages, ZIP contents and manifest excerpt. */
