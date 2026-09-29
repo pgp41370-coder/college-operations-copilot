@@ -9,42 +9,11 @@
  */
 import postgres from "postgres";
 import { createUser } from "../src/lib/server/users";
+import { hiddenPrompt } from "./lib/prompt";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
   return i > 0 ? process.argv[i + 1] : undefined;
-}
-
-/** Reads a line from the terminal without echoing it (raw mode). */
-async function hiddenPrompt(q: string): Promise<string> {
-  const stdin = process.stdin;
-  process.stdout.write(q);
-  stdin.setRawMode(true);
-  stdin.resume();
-  stdin.setEncoding("utf8");
-  return new Promise((resolve) => {
-    let value = "";
-    const onData = (chunk: string) => {
-      for (const ch of chunk) {
-        if (ch === "\r" || ch === "\n" || ch === "\u0004") {
-          stdin.setRawMode(false);
-          stdin.pause();
-          stdin.off("data", onData);
-          process.stdout.write("\n");
-          resolve(value);
-          return;
-        }
-        if (ch === "\u0003") {
-          stdin.setRawMode(false);
-          process.stdout.write("\n");
-          process.exit(130);
-        }
-        if (ch === "\u007f" || ch === "\b") value = value.slice(0, -1);
-        else value += ch;
-      }
-    };
-    stdin.on("data", onData);
-  });
 }
 
 async function main() {
