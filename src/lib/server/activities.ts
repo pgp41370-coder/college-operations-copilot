@@ -23,7 +23,7 @@ import type { User } from "./auth-core";
 import { audit } from "./audit";
 import { AppError, notFound } from "./errors";
 import { MAX_SOURCES_PER_ACTIVITY, validateUpload } from "./files";
-import type { Db } from "./types";
+import type { Db, Sql } from "./types";
 
 export const STATUSES = ["DRAFT", "PROCESSING", "REVIEW_REQUIRED", "READY_FOR_APPROVAL", "APPROVED", "ARCHIVED"] as const;
 export type ActivityStatus = (typeof STATUSES)[number];
@@ -126,7 +126,7 @@ export const createActivityInput = z.object({
   fields: z.record(z.string(), z.string().max(20000)).default({}),
 });
 
-export async function createActivity(sql: Db, user: User, input: z.infer<typeof createActivityInput>): Promise<string> {
+export async function createActivity(sql: Sql, user: User, input: z.infer<typeof createActivityInput>): Promise<string> {
   const templateId = input.templateId ?? (await defaultTemplateId(sql));
   const { def } = await loadTemplate(sql, templateId);
   const errors: string[] = [];
@@ -228,7 +228,7 @@ export const setFieldInput = z.object({
   note: z.string().max(500).optional(),
 });
 
-export async function setField(sql: Db, user: User, activityId: string, key: string, input: z.infer<typeof setFieldInput>) {
+export async function setField(sql: Sql, user: User, activityId: string, key: string, input: z.infer<typeof setFieldInput>) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   const { def } = await loadTemplate(sql, a.template_id);
@@ -266,7 +266,7 @@ export async function setField(sql: Db, user: User, activityId: string, key: str
 }
 
 /** Reviewer picks one of the extracted candidates (resolves a conflict). */
-export async function chooseCandidate(sql: Db, user: User, activityId: string, key: string, candidateId: string) {
+export async function chooseCandidate(sql: Sql, user: User, activityId: string, key: string, candidateId: string) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   if (!UUID.test(candidateId)) throw notFound("Candidate");
@@ -297,7 +297,7 @@ export async function chooseCandidate(sql: Db, user: User, activityId: string, k
 }
 
 /** Reviewer confirms an extracted value as correct (clears low-confidence flag). */
-export async function confirmField(sql: Db, user: User, activityId: string, key: string) {
+export async function confirmField(sql: Sql, user: User, activityId: string, key: string) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   await sql.begin(async (tx) => {
@@ -322,7 +322,7 @@ export const addSourceInput = z.object({
 });
 
 export async function addSource(
-  sql: Db,
+  sql: Sql,
   user: User,
   activityId: string,
   input: z.infer<typeof addSourceInput> & { filename: string; bytes: Uint8Array },
@@ -402,7 +402,7 @@ export async function updateSourceMeta(sql: Db, user: User, sourceId: string, in
   await audit(sql, { actorId: user.id, action: "source.caption_updated", activityId: activity.id, entityType: "source", entityId: source.id, details: { filename: source.filename } });
 }
 
-export async function deleteSource(sql: Db, user: User, sourceId: string) {
+export async function deleteSource(sql: Sql, user: User, sourceId: string) {
   const { source, activity } = await getSourceForUser(sql, user, sourceId);
   assertEditable(activity);
   const { def } = await loadTemplate(sql, activity.template_id);
@@ -447,7 +447,7 @@ export async function markExtraction(sql: Db, user: User, sourceId: string, stat
 }
 
 /** Stores per-page text from the browser extractor and re-runs the parser. */
-export async function saveExtraction(sql: Db, user: User, sourceId: string, input: z.infer<typeof extractionPagesInput>) {
+export async function saveExtraction(sql: Sql, user: User, sourceId: string, input: z.infer<typeof extractionPagesInput>) {
   const { source, activity } = await getSourceForUser(sql, user, sourceId);
   assertEditable(activity);
   if (source.kind === "photo") throw new AppError(409, "Photographs are evidence attachments and are not processed.");
@@ -579,7 +579,7 @@ async function assertSourceInActivity(sql: Db, activityId: string, sourceId: str
   if (!s) throw new AppError(400, "The referenced document does not belong to this activity.");
 }
 
-export async function addAttendanceRow(sql: Db, user: User, activityId: string, input: z.infer<typeof attendanceRowInput>) {
+export async function addAttendanceRow(sql: Sql, user: User, activityId: string, input: z.infer<typeof attendanceRowInput>) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   await assertSourceInActivity(sql, activityId, input.sourceId);
@@ -596,7 +596,7 @@ export async function addAttendanceRow(sql: Db, user: User, activityId: string, 
 }
 
 export async function updateAttendanceRow(
-  sql: Db,
+  sql: Sql,
   user: User,
   activityId: string,
   rowId: string,
@@ -637,7 +637,7 @@ export async function updateAttendanceRow(
   });
 }
 
-export async function deleteAttendanceRow(sql: Db, user: User, activityId: string, rowId: string) {
+export async function deleteAttendanceRow(sql: Sql, user: User, activityId: string, rowId: string) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   if (!UUID.test(rowId)) throw notFound("Attendance row");
@@ -650,7 +650,7 @@ export async function deleteAttendanceRow(sql: Db, user: User, activityId: strin
   });
 }
 
-export async function verifyAllAttendance(sql: Db, user: User, activityId: string) {
+export async function verifyAllAttendance(sql: Sql, user: User, activityId: string) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   await sql.begin(async (tx) => {
@@ -713,7 +713,7 @@ export function parseAttendanceCsv(csv: string): { rows: z.infer<typeof attendan
   return { rows, errors };
 }
 
-export async function importAttendanceCsv(sql: Db, user: User, activityId: string, csv: string) {
+export async function importAttendanceCsv(sql: Sql, user: User, activityId: string, csv: string) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   const { rows, errors } = parseAttendanceCsv(csv);
@@ -807,7 +807,7 @@ export async function refreshStatus(sql: Db, activityId: string) {
   }
 }
 
-export async function acknowledgeReconciliation(sql: Db, user: User, activityId: string, note: string) {
+export async function acknowledgeReconciliation(sql: Sql, user: User, activityId: string, note: string) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   const trimmed = note.trim();
@@ -825,7 +825,7 @@ export async function acknowledgeReconciliation(sql: Db, user: User, activityId:
 
 // ---------------------------------------------------------------- reports
 
-export async function generateReports(sql: Db, user: User, activityId: string) {
+export async function generateReports(sql: Sql, user: User, activityId: string) {
   const a = await getActivity(sql, user, activityId);
   assertEditable(a);
   const state = await computeState(sql, a);
@@ -877,7 +877,7 @@ export async function latestReports(sql: Db, activityId: string): Promise<Report
 
 // ---------------------------------------------------------------- approval
 
-export async function approveActivity(sql: Db, user: User, activityId: string) {
+export async function approveActivity(sql: Sql, user: User, activityId: string) {
   const a = await getActivity(sql, user, activityId);
   if (a.status === "APPROVED") throw new AppError(409, "This activity is already approved.");
   if (a.status === "ARCHIVED") throw new AppError(409, "Archived activities cannot be approved.");
@@ -899,7 +899,7 @@ export async function approveActivity(sql: Db, user: User, activityId: string) {
   });
 }
 
-export async function archiveActivity(sql: Db, user: User, activityId: string) {
+export async function archiveActivity(sql: Sql, user: User, activityId: string) {
   const a = await getActivity(sql, user, activityId);
   if (a.status === "ARCHIVED") throw new AppError(409, "This activity is already archived.");
   await sql.begin(async (tx) => {
@@ -908,7 +908,7 @@ export async function archiveActivity(sql: Db, user: User, activityId: string) {
   });
 }
 
-export async function reopenActivity(sql: Db, user: User, activityId: string, reason: string) {
+export async function reopenActivity(sql: Sql, user: User, activityId: string, reason: string) {
   if (user.role !== "admin") throw new AppError(403, "Only an administrator can reopen an approved or archived activity.");
   const a = await getActivity(sql, user, activityId);
   if (a.status !== "APPROVED" && a.status !== "ARCHIVED") throw new AppError(409, "Only approved or archived activities can be reopened.");

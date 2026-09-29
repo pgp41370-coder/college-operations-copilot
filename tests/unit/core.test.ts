@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { findDates, findTimes, formatTime, normalizeValue } from "@/lib/normalize";
-import { extractCandidates, cleanValue } from "@/lib/extraction/parser";
+import { extractCandidates, cleanValue, prefixMatch } from "@/lib/extraction/parser";
 import { parseAttendanceRows, readGenderToken } from "@/lib/extraction/attendance";
 import type { PageText } from "@/lib/extraction/types";
 import { resolveField, type StoredCandidate } from "@/lib/fields/resolve";
@@ -111,6 +111,24 @@ describe("parser (synthetic structured report)", () => {
   it("caps confidence by OCR page confidence", () => {
     const low = extractCandidates([page("activity_report", SYNTHETIC_REPORT, { method: "ocr", confidence: 55 })], DEF);
     expect(Math.max(...low.map((c) => c.confidence))).toBeLessThanOrEqual(0.55);
+  });
+  it("tolerates small OCR slips in labels but marks them fuzzy with lower confidence", () => {
+    const d = extractCandidates([page("detailed_report", "Date:- 12/01/2031\nREPORT\n\nTopie- Robotics Workshop\n\nThe workshop was held.\n\nImpact Analvsis:\nStudents learned.\n")], DEF);
+    expect(d.find((c) => c.fieldKey === "title")?.value).toBe("Robotics Workshop");
+    expect(d.find((c) => c.fieldKey === "event_description")?.value).toBe("The workshop was held.");
+    expect(d.find((c) => c.fieldKey === "impact_analysis")?.value).toBe("Students learned.");
+    const t = extractCandidates([page("activity_report", "Category of the Actvity: Technical\nOutcome of the day was good")], DEF);
+    const cat = t.find((c) => c.fieldKey === "category")!;
+    expect(cat.value).toBe("Technical");
+    expect(cat.rule).toMatch(/fuzzy_label/);
+    expect(cat.confidence).toBeLessThan(0.8);
+    // Short labels are never matched approximately.
+    expect(t.find((c) => c.fieldKey === "outcomes")).toBeUndefined();
+  });
+  it("prefixMatch is exact for short labels", () => {
+    expect(prefixMatch("topie", "topic")).toEqual({ len: 5, fuzzy: true });
+    expect(prefixMatch("topie", "topic", 10)).toBeNull();
+    expect(prefixMatch("sessionx", "session")).toEqual({ len: 7, fuzzy: false });
   });
   it("cleanValue strips table debris", () => {
     expect(cleanValue(": | Social Responsibility |")).toBe("Social Responsibility");
@@ -279,5 +297,39 @@ describe("template validation", () => {
     bad.activityReport.detailRows.push({ label: "X", value: "{nonexistent}" });
     const r = validateTemplateDefinition(bad);
     expect(r.ok).toBe(false);
+  });
+});
+
+describe("geometric line rebuilding", () => {
+  it("orders words into lines and keeps paragraph gaps without changing words", async () => {
+    const { wordsToText } = await import("@/lib/extraction/layout");
+    const w = (text: string, x: number, y: number) => ({ text, x0: x, x1: x + 40, y0: y, y1: y + 10, confidence: 90 });
+    // Value column emitted before the label column, as Tesseract sometimes does.
+    const text = wordsToText([w("Technical", 200, 100), w("Category:", 10, 101), w("Next", 10, 160), w("para", 60, 160)]);
+    expect(text).toBe("Category: Technical\n\nNext para");
+  });
+});
+
+describe("LLM grounding (optional adapter)", () => {
+  it("accepts only values backed by a verbatim quote on the cited page", async () => {
+    const { groundLlmValue, OpenAICompatibleProvider, LLM_MAX_CONFIDENCE } = await import("@/lib/ai/provider");
+    const pages = [page("notice", "The workshop will be held on 12th January 2031 in Hall B.")];
+    const ok = groundLlmValue({ field: "activity_date", value: "12/01/2031", quote: "held on 12th January 2031", page: 1 }, pages, DEF);
+    expect(ok.ok && ok.candidate.method === "llm" && ok.candidate.confidence === LLM_MAX_CONFIDENCE).toBe(true);
+    expect(groundLlmValue({ field: "activity_date", value: "13/01/2031", quote: "held on 12th January 2031", page: 1 }, pages, DEF).ok).toBe(false);
+    expect(groundLlmValue({ field: "total_count", value: "45", quote: "45 students attended", page: 1 }, pages, DEF).ok).toBe(false);
+    const fakeFetch = (async () =>
+      new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ items: [
+        { field: "venue", value: "Hall B", quote: "in Hall B", page: 1 },
+        { field: "total_count", value: "45", quote: "45 students", page: 1 },
+      ] }) } }] }))) as unknown as typeof fetch;
+    const p = new OpenAICompatibleProvider("http://llm.invalid/v1", "test-model", undefined, fakeFetch);
+    const r = await p.extractFields(pages, DEF);
+    expect(r.candidates.map((c) => c.fieldKey)).toEqual(["venue"]);
+    expect(r.rejected).toEqual([{ field: "total_count", reason: "quote not found in page text" }]);
+  });
+  it("defaults to the deterministic provider when nothing is configured", async () => {
+    const { getProvider } = await import("@/lib/ai/provider");
+    expect(getProvider().mode).toBe("deterministic");
   });
 });

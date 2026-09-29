@@ -51,6 +51,41 @@ function compact(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function levenshtein(a: string, b: string): number {
+  const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let diag = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = prev[j];
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+
+/**
+ * Does compact text `c` start with compact `label`? Exact, or — for labels of
+ * 5+ characters — within a small edit distance (OCR slips such as "Topie" for
+ * "Topic"). Returns the number of characters of `c` consumed and whether the
+ * match was fuzzy, or null.
+ */
+export function prefixMatch(c: string, label: string, minFuzzyLength = 5): { len: number; fuzzy: boolean } | null {
+  if (c.startsWith(label)) return { len: label.length, fuzzy: false };
+  const max = label.length < minFuzzyLength ? 0 : label.length >= 16 ? 2 : 1;
+  if (!max) return null;
+  let best: { len: number; d: number } | null = null;
+  // Prefer lengths closest to the label's own length when distances tie.
+  const lengths = [0, -1, 1, -2, 2].filter((d) => Math.abs(d) <= max).map((d) => label.length + d);
+  for (const len of lengths) {
+    if (len < 1 || len > c.length) continue;
+    const d = levenshtein(c.slice(0, len), label);
+    if (d <= max && (!best || d < best.d)) best = { len, d };
+  }
+  return best ? { len: best.len, fuzzy: true } : null;
+}
+
 /** Position in `line` just after the first `n` alphanumeric characters. */
 function offsetAfterAlnum(line: string, n: number): number {
   let seen = 0;
@@ -65,6 +100,7 @@ function offsetAfterAlnum(line: string, n: number): number {
 
 interface LabelHit {
   key: string;
+  fuzzy: boolean;
   /** Text after the label on this line. */
   rest: string;
   /** Label words that were not on this line (label wrapped in a table cell). */
@@ -79,14 +115,19 @@ interface LabelSpec {
 function matchLabel(line: string, specs: LabelSpec[]): LabelHit | null {
   const c = compact(line.replace(/^[\s|‘'"]+/, ""));
   if (!c) return null;
-  let best: { spec: LabelSpec; k: number; len: number } | null = null;
+  let best: { spec: LabelSpec; k: number; len: number; labelLen: number; fuzzy: boolean } | null = null;
   for (const spec of specs) {
     // Full label first, then shorter prefixes of at least two words (wrapped cells).
     for (let k = spec.words.length; k >= Math.min(2, spec.words.length); k--) {
       const prefix = compact(spec.words.slice(0, k).join(""));
       if (prefix.length < 5 && k < spec.words.length) break;
-      if (c.startsWith(prefix)) {
-        if (!best || prefix.length > best.len) best = { spec, k, len: prefix.length };
+      // Table labels need 10+ characters before an approximate match is allowed.
+      const m = prefixMatch(c, prefix, 10);
+      if (m) {
+        // Longest label coverage wins; an approximate match costs 3 characters.
+        const score = (x: { labelLen: number; fuzzy: boolean }) => x.labelLen - (x.fuzzy ? 3 : 0);
+        const better = !best || score({ labelLen: prefix.length, fuzzy: m.fuzzy }) > score(best);
+        if (better) best = { spec, k, len: m.len, labelLen: prefix.length, fuzzy: m.fuzzy };
         break;
       }
     }
@@ -94,7 +135,7 @@ function matchLabel(line: string, specs: LabelSpec[]): LabelHit | null {
   if (!best) return null;
   const trimmed = line.replace(/^[\s|‘'"]+/, "");
   const rest = trimmed.slice(offsetAfterAlnum(trimmed, best.len));
-  return { key: best.spec.key, rest, remainder: best.spec.words.slice(best.k) };
+  return { key: best.spec.key, fuzzy: best.fuzzy, rest, remainder: best.spec.words.slice(best.k) };
 }
 
 function stripRemainder(line: string, remainder: string[]): string {
@@ -140,7 +181,7 @@ export function labelValueCandidates(page: PageText, def: TemplateDefinition): F
   const fieldByKey = new Map(def.fields.map((f) => [f.key, f]));
   const lines = page.text.split(/\r?\n/);
 
-  type Seg = { key: string; first: string; more: string[]; orphans: string[]; remainder: string[]; line: number };
+  type Seg = { key: string; first: string; more: string[]; orphans: string[]; remainder: string[]; line: number; fuzzy: boolean };
   const segs: Seg[] = [];
   let current: Seg | null = null;
   let orphans: string[] = [];
@@ -164,7 +205,7 @@ export function labelValueCandidates(page: PageText, def: TemplateDefinition): F
       continue;
     }
     if (hit) {
-      current = { key: hit.key, first: hit.rest, more: [], orphans, remainder: hit.remainder, line: i };
+      current = { key: hit.key, first: hit.rest, more: [], orphans, remainder: hit.remainder, line: i, fuzzy: hit.fuzzy };
       segs.push(current);
       orphans = [];
       continue;
@@ -186,7 +227,7 @@ export function labelValueCandidates(page: PageText, def: TemplateDefinition): F
   for (const seg of segs) {
     const field = fieldByKey.get(seg.key)!;
     if (field.type === "date") {
-      out.push(...dateAndTimeFromLabel(seg.first, field, page, def));
+      out.push(...dateAndTimeFromLabel(seg.first, field, page, def).map((c) => (seg.fuzzy ? fuzzed(c) : c)));
       continue;
     }
     let value: string;
@@ -221,7 +262,7 @@ export function labelValueCandidates(page: PageText, def: TemplateDefinition): F
     const snippet = [...(rule === "label_value:wrapped_cell" ? seg.orphans : []), lines[seg.line], ...seg.more]
       .join("\n")
       .slice(0, 1200);
-    out.push({
+    const cand: FieldCandidate = {
       fieldKey: field.key,
       value: norm.value,
       normalized: field.type === "text" || field.type === "longtext" ? textKey(norm.value) : norm.value,
@@ -231,10 +272,16 @@ export function labelValueCandidates(page: PageText, def: TemplateDefinition): F
       method: "deterministic_parser",
       rule,
       snippet,
-    });
+    };
+    out.push(seg.fuzzy ? fuzzed(cand) : cand);
   }
   out.push(...countCandidates(page, def));
   return out;
+}
+
+/** A label matched only approximately: lower confidence, marked in the rule. */
+function fuzzed(c: FieldCandidate): FieldCandidate {
+  return { ...c, rule: `${c.rule}:fuzzy_label`, confidence: Math.round(Math.min(c.confidence, 0.75) * 1000) / 1000 };
 }
 
 /** True when a line visibly continues on the next line ("...on the occasion of"). */
@@ -327,8 +374,10 @@ export function detailedReportCandidates(page: PageText, def: TemplateDefinition
   const topicKey = compact(dr.topicLabel);
   const impactKey = compact(dr.impactHeading);
 
-  const topicIdx = lines.findIndex((l) => compact(l).startsWith(topicKey));
-  const impactIdx = lines.findIndex((l) => compact(l).startsWith(impactKey));
+  const topicIdx = lines.findIndex((l) => prefixMatch(compact(l), topicKey) != null);
+  const impactIdx = lines.findIndex((l) => prefixMatch(compact(l), impactKey) != null);
+  const topicLen = topicIdx >= 0 ? prefixMatch(compact(lines[topicIdx]), topicKey)!.len : 0;
+  const impactLen = impactIdx >= 0 ? prefixMatch(compact(lines[impactIdx]), impactKey)!.len : 0;
 
   for (let i = 0; i < (topicIdx >= 0 ? topicIdx : lines.length); i++) {
     const m = HEADER_DATE.exec(lines[i]);
@@ -343,9 +392,8 @@ export function detailedReportCandidates(page: PageText, def: TemplateDefinition
     const after = lines.slice(topicIdx);
     const paras = paragraphs(after);
     const topicPara = paras[0] ?? [];
-    const labelLen = compact(dr.topicLabel).length;
     const first = topicPara[0] ?? "";
-    const topic = cleanValue([first.slice(offsetAfterAlnum(first, labelLen)), ...topicPara.slice(1)].join(" "));
+    const topic = cleanValue([first.slice(offsetAfterAlnum(first, topicLen)), ...topicPara.slice(1)].join(" "));
     if (meaningful(topic)) {
       out.push(candidate(dr.topicField, normalizeText(topic), page, RULE_CONFIDENCE.detailedTopic, "detailed:topic", topicPara.join("\n"), true));
     }
@@ -364,8 +412,7 @@ export function detailedReportCandidates(page: PageText, def: TemplateDefinition
   }
   if (impactIdx >= 0) {
     const rest = lines.slice(impactIdx);
-    const headLen = compact(dr.impactHeading).length;
-    const sameLine = cleanValue(rest[0].slice(offsetAfterAlnum(rest[0], headLen)));
+    const sameLine = cleanValue(rest[0].slice(offsetAfterAlnum(rest[0], impactLen)));
     const paras = paragraphs(rest.slice(1));
     const impact = [sameLine, ...(paras[0] ?? []).map((l) => l.trim())].filter(Boolean).join(" ");
     if (meaningful(impact)) {

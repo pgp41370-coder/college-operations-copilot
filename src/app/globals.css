@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --foreground: #1c2430;
+  --muted: #5b6676;
+  --border: #dfe3e9;
+  --brand: #1f4e8c;
+  --brand-strong: #173c6c;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+.btn-primary {
+  @apply border-brand bg-brand text-white hover:bg-brand-strong;
+}
+.btn-secondary {
+  @apply border-line bg-white text-foreground hover:bg-slate-50;
+}
+.btn-danger {
+  @apply border-red-200 bg-white text-red-700 hover:bg-red-50;
+}
+.btn-sm {
+  @apply px-2 py-1 text-xs;
+}
+.input {
+  @apply w-full rounded-md border border-line bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+}
+.label {
+  @apply mb-1 block text-xs font-medium text-muted;
+}
+.card {
+  @apply rounded-lg border border-line bg-surface;
+}
+.table {
+  @apply w-full border-collapse text-sm;
+}
+.table th {
+  @apply border-b border-line bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted;
+}
+.table td {
+  @apply border-b border-line px-3 py-2 align-top;
+}
+
+/* Paper preview of generated reports */
+.paper {
+  @apply mx-auto max-w-[800px] bg-white p-10 text-[15px] leading-relaxed text-black shadow-sm;
+  font-family: "Times New Roman", Times, serif;
+}
+.paper table {
+  @apply w-full border-collapse;
+}
+.paper td,
+.paper th {
+  @apply border border-black px-2 py-1 align-top;
+}
+.missing-mark {
+  @apply rounded bg-amber-100 px-1 text-amber-900;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .paper {
+    box-shadow: none;
+    padding: 0;
+  }
 }

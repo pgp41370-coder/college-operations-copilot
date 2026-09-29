@@ -2,7 +2,7 @@ import type { User } from "./auth-core";
 import { audit } from "./audit";
 import { AppError, notFound } from "./errors";
 import { validateTemplateDefinition } from "../templates/schema";
-import type { Db } from "./types";
+import type { Db, Sql } from "./types";
 
 export async function listTemplates(sql: Db) {
   return sql<{ id: string; slug: string; version: number; name: string; description: string | null; derived_from: string | null; is_active: boolean; created_at: Date; activity_count: number }[]>`
@@ -23,7 +23,7 @@ export async function getTemplateRow(sql: Db, id: string) {
  * Saving a template creates a new version; existing activities keep the
  * version they were created with, so approved reports never change.
  */
-export async function saveTemplateVersion(sql: Db, user: User, baseId: string, definition: unknown): Promise<string> {
+export async function saveTemplateVersion(sql: Sql, user: User, baseId: string, definition: unknown): Promise<string> {
   if (user.role !== "admin") throw new AppError(403, "Administrator access required.");
   const base = await getTemplateRow(sql, baseId);
   const check = validateTemplateDefinition(definition);
