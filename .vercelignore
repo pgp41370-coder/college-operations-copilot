@@ -1,0 +1,13 @@
+# Never upload private institutional documents, local credentials or caches.
+reference-data
+.cache
+.local-credentials
+.env*
+!.env.example
+test-results
+playwright-report
+node_modules
+.next
+public/vendor
+.Rhistory
+.DS_Store
