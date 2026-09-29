@@ -7,7 +7,6 @@
  * not running in a terminal. It is never accepted as a command-line argument
  * (which would be saved in shell history).
  */
-import { createInterface } from "node:readline";
 import postgres from "postgres";
 import { createUser } from "../src/lib/server/users";
 
@@ -16,20 +15,35 @@ function arg(name: string): string | undefined {
   return i > 0 ? process.argv[i + 1] : undefined;
 }
 
+/** Reads a line from the terminal without echoing it (raw mode). */
 async function hiddenPrompt(q: string): Promise<string> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-  const out = rl as unknown as { _writeToOutput: (s: string) => void; output: NodeJS.WriteStream };
-  let muted = false;
-  out._writeToOutput = (s: string) => {
-    if (!muted) process.stdout.write(s);
-  };
+  const stdin = process.stdin;
+  process.stdout.write(q);
+  stdin.setRawMode(true);
+  stdin.resume();
+  stdin.setEncoding("utf8");
   return new Promise((resolve) => {
-    rl.question(q, (answer) => {
-      rl.close();
-      process.stdout.write("\n");
-      resolve(answer);
-    });
-    muted = true;
+    let value = "";
+    const onData = (chunk: string) => {
+      for (const ch of chunk) {
+        if (ch === "\r" || ch === "\n" || ch === "\u0004") {
+          stdin.setRawMode(false);
+          stdin.pause();
+          stdin.off("data", onData);
+          process.stdout.write("\n");
+          resolve(value);
+          return;
+        }
+        if (ch === "\u0003") {
+          stdin.setRawMode(false);
+          process.stdout.write("\n");
+          process.exit(130);
+        }
+        if (ch === "\u007f" || ch === "\b") value = value.slice(0, -1);
+        else value += ch;
+      }
+    };
+    stdin.on("data", onData);
   });
 }
 
