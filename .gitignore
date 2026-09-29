@@ -63,3 +63,6 @@ next-env.d.ts
 /.agents/
 /.claude/skills/
 /skills-lock.json
+
+# Demo recordings and generated demo files (reproducible via scripts/demo/)
+/demo/
