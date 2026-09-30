@@ -80,7 +80,7 @@ test.describe.serial("activity documentation workflow", () => {
 
   test("faculty creates an activity, uploads evidence and sees provenance + conflict", async ({ page }) => {
     await login(page, users()[0]);
-    await page.getByRole("link", { name: "Create Activity", exact: true }).click();
+    await page.getByRole("link", { name: "Create Activity", exact: true }).first().click();
     await page.getByLabel("Venue").fill("Seminar Hall B-12");
     await page.getByRole("button", { name: /Create and continue/ }).click();
     await expect(page).toHaveURL(/tab=evidence/);
@@ -96,12 +96,12 @@ test.describe.serial("activity documentation workflow", () => {
     // Invalid type is rejected.
     await upload(page, "Notice", "fake.pdf", "application/pdf", Buffer.from("not a pdf"), /Unsupported file type/);
 
-    await page.getByRole("button", { name: "2 · Review fields" }).click();
-    const category = page.locator("tr", { hasText: "Category of the Activity" }).first();
+    await page.getByRole("tab", { name: /^Review/ }).click();
+    const category = page.getByTestId("field-category");
     await expect(category).toContainText("Technical");
     await expect(category).toContainText("report.pdf — Page 1");
     await expect(category).toContainText("Deterministic rule");
-    const date = page.locator("tr", { hasText: "Date of Activity" }).first();
+    const date = page.getByTestId("field-activity_date");
     await expect(date).toContainText("Conflict — review required");
     await expect(page.getByText("Documents contain different values for Date of Activity")).toBeVisible();
   });
@@ -109,9 +109,9 @@ test.describe.serial("activity documentation workflow", () => {
   test("reviewer resolves the conflict, checks attendance, generates and approves", async ({ page }) => {
     await login(page, users()[0]);
     await page.goto(`${activityUrl}?tab=review`);
-    const card = page.locator("div.rounded-md", { hasText: "12/01/2031" }).filter({ hasText: "report.pdf" }).first();
+    const card = page.getByTestId("field-activity_date").getByTestId("candidate").filter({ hasText: "12/01/2031" }).filter({ hasText: "report.pdf" }).first();
     await card.getByRole("button", { name: "Use this value" }).click();
-    await expect(page.locator("tr", { hasText: "Date of Activity" }).first()).toContainText("Selected by reviewer");
+    await expect(page.getByTestId("field-activity_date")).toContainText("Selected by reviewer");
 
     // Confirm any low-confidence values after checking them.
     while (await page.getByRole("button", { name: "Confirm", exact: true }).count()) {
@@ -120,24 +120,24 @@ test.describe.serial("activity documentation workflow", () => {
     }
 
     // Edit a field manually: history is kept.
-    const assoc = page.locator("tr", { hasText: "Association/Collaboration" }).first();
+    const assoc = page.getByTestId("field-association");
     await assoc.getByRole("button", { name: "Edit" }).click();
     await assoc.locator("input.input").first().fill("Demo Robotics Club (DRC)");
     await assoc.getByRole("button", { name: "Save" }).click();
-    await expect(page.locator("tr", { hasText: "Association/Collaboration" }).first()).toContainText("Originally extracted");
+    await expect(page.getByTestId("field-association")).toContainText("Originally extracted");
 
-    await page.getByRole("button", { name: "3 · Attendance" }).click();
+    await page.getByRole("tab", { name: /^Attendance/ }).click();
     for (const [n, name, g] of [["1", "Synthetic One", "Male"], ["2", "Synthetic Two", "Male"], ["3", "Synthetic Three", "Female"]]) {
-      const row = page.locator("tr.bg-slate-50");
+      const row = page.getByTestId("new-attendance-row");
       await row.getByPlaceholder("#").fill(n);
       await row.getByPlaceholder("Name as written on the sheet").fill(name);
       await row.locator("select").selectOption({ label: g });
       await row.getByRole("button", { name: "Add row" }).click();
       await expect(page.locator("td input[value='" + name + "']")).toBeVisible();
     }
-    await expect(page.getByText("PASS").first()).toBeVisible();
+    await expect(page.getByText("Reconciled", { exact: true }).first()).toBeVisible();
 
-    await page.getByRole("button", { name: "4 · Reports" }).click();
+    await page.getByRole("tab", { name: "Reports" }).click();
     await page.getByRole("button", { name: /Generate reports/ }).click();
     await expect(page.locator(".paper")).toContainText("Robotics Workshop");
     await expect(page.locator(".paper")).toContainText("12/01/2031");
@@ -155,13 +155,13 @@ test.describe.serial("activity documentation workflow", () => {
     await page.getByRole("button", { name: "Evidence package (.zip)" }).click();
     expect((await dl4).suggestedFilename()).toMatch(/evidence-package\.zip$/);
 
-    await page.getByRole("button", { name: "5 · Approve" }).click();
+    await page.getByRole("tab", { name: "Approve" }).click();
     await expect(page.getByText("No blocking issues")).toBeVisible();
     await page.getByRole("button", { name: "Approve", exact: true }).click();
     await expect(page.getByText(/Approved by E2E Faculty A/).first()).toBeVisible();
-    await page.getByRole("button", { name: "History" }).click();
+    await page.getByRole("tab", { name: "Audit" }).click();
     for (const a of ["Created activity", "Uploaded document", "Extraction complete", "Conflict resolved", "Field edited", "Reports generated", "Activity approved", "Export downloaded"]) {
-      await expect(page.getByRole("cell", { name: a }).first()).toBeVisible();
+      await expect(page.getByText(a, { exact: true }).first()).toBeVisible();
     }
   });
 

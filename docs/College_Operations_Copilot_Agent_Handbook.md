@@ -194,7 +194,7 @@ These are design rules for any future version. Rules 3 and 4 are already enforce
 | Authority | Reporting only. |
 | Restrictions | Cannot edit or delete audit records (the log is append-only). |
 | Escalation path | Administrator. |
-| Current counterpart | <span class="status impl">CURRENT SOFTWARE SERVICE</span> Append-only `audit_logs`, the History tab, the Audit Log page and the JSON provenance manifest. |
+| Current counterpart | <span class="status impl">CURRENT SOFTWARE SERVICE</span> Append-only `audit_logs`, the activity Audit tab, the Audit Log page and the JSON provenance manifest. |
 
 </div>
 

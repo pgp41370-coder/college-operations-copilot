@@ -9,9 +9,9 @@ export function TemplateEditor({ id, json, canEdit }: { id: string; json: string
   const [text, setText] = useState(json);
   const [msg, setMsg] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   return (
-    <div className="card p-4">
-      <h2 className="mb-1 text-sm font-semibold">Definition (JSON)</h2>
-      <p className="mb-2 text-xs text-muted">{canEdit ? "Administrators can edit labels, required fields, letterhead, report rows and parser labels. The definition is validated before saving and saved as a new version." : "Read-only. Only administrators can edit the active version."}</p>
+    <details className="card p-4">
+      <summary className="t-card cursor-pointer">Definition (JSON){canEdit ? " — edit" : ""}</summary>
+      <p className="t-meta mb-2 mt-2">{canEdit ? "Administrators can edit labels, required fields, letterhead, report rows and parser labels. The definition is validated before saving and saved as a new version." : "Read-only. Only administrators can edit the active version."}</p>
       <textarea className="input min-h-[60vh] font-mono text-xs" readOnly={!canEdit} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} />
       {msg && <div className="mt-2"><Notice tone={msg.tone}>{msg.text}</Notice></div>}
       {canEdit && (
@@ -37,6 +37,6 @@ export function TemplateEditor({ id, json, canEdit }: { id: string; json: string
           Save as new version
         </button>
       )}
-    </div>
+    </details>
   );
 }

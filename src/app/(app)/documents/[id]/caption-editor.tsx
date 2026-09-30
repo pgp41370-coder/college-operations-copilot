@@ -10,6 +10,7 @@ export function CaptionEditor({ id, caption, sourceInfo, locked }: { id: string;
   const [msg, setMsg] = useState<string | null>(null);
   return (
     <div className="card space-y-3 p-4">
+      <h2 className="t-card">Caption</h2>
       <div>
         <label className="label" htmlFor="cap">Caption (entered by you)</label>
         <input id="cap" className="input" disabled={locked} value={c} maxLength={300} onChange={(e) => setC(e.target.value)} />
@@ -34,7 +35,7 @@ export function CaptionEditor({ id, caption, sourceInfo, locked }: { id: string;
           Save
         </button>
       )}
-      {msg && <p className="text-xs text-muted">{msg}</p>}
+      {msg && <p className="t-meta" role="status">{msg}</p>}
     </div>
   );
 }

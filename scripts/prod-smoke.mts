@@ -74,8 +74,8 @@ async function logout() {
 async function upload(kind: string, file: string, done: RegExp) {
   await page.getByLabel("Document type").selectOption({ label: kind });
   await page.locator('input[type="file"]').setInputFiles(path.join(IN, file));
-  await page.locator("div.rounded-md", { hasText: file }).filter({ hasText: done }).first().waitFor({ timeout: 240_000 });
-  const err = await page.locator("div.rounded-md.border-red-200", { hasText: file }).count();
+  await page.getByTestId("upload-job").filter({ hasText: file }).filter({ hasText: done }).first().waitFor({ timeout: 240_000 });
+  const err = await page.locator("[data-testid=upload-job].border-danger-line", { hasText: file }).count();
   if (err) throw new Error(`upload/extraction error shown for ${file}`);
 }
 
@@ -123,10 +123,10 @@ async function main() {
     });
     await step("Login (admin)", () => login(email, password));
     await step("Dashboard loads", async () => {
-      await page.getByRole("heading", { name: /Welcome/ }).waitFor();
+      await page.getByRole("heading", { level: 1, name: /^(Good (morning|afternoon|evening)|Welcome),/ }).waitFor();
     });
     await step("Create activity (all fields blank)", async () => {
-      await page.getByRole("link", { name: "Create Activity", exact: true }).click();
+      await page.getByRole("link", { name: "Create Activity", exact: true }).first().click();
       await page.getByRole("button", { name: /Create and continue/ }).click();
       await page.waitForURL(/tab=evidence/);
       activityUrl = page.url().split("?")[0];
@@ -139,25 +139,25 @@ async function main() {
     await step("Upload photograph (JPG) → stored as evidence only", () => upload("Photograph", "demo-event-photo.jpg", /stored as evidence/));
 
     await step("Provenance shown for extracted values", async () => {
-      await page.getByRole("button", { name: /2 · Review fields/ }).click();
-      const row = page.locator("tr", { hasText: "Category of the Activity" }).first();
+      await page.getByRole("tab", { name: /^Review/ }).click();
+      const row = page.getByTestId("field-category");
       await row.getByText("Technical").waitFor();
       await row.getByText("demo-activity-report-scan.pdf — Page 1").waitFor();
       await row.getByText("Deterministic rule").waitFor();
       return "Category = Technical ← demo-activity-report-scan.pdf p.1 (deterministic rule)";
     });
     await step("31 Oct vs 6 Nov date conflict detected and not auto-resolved", async () => {
-      const row = page.locator("tr", { hasText: "Date of Activity" }).first();
+      const row = page.getByTestId("field-activity_date");
       await row.getByText("Conflict — review required").waitFor();
       await page.getByText("Documents contain different values for Date of Activity").waitFor();
-      await page.locator("div.rounded-md", { hasText: "31/10/2026" }).filter({ hasText: "demo-poster.png" }).first().waitFor();
-      await page.locator("div.rounded-md", { hasText: "06/11/2026" }).filter({ hasText: "demo-notice.pdf" }).first().waitFor();
+      await row.getByTestId("candidate").filter({ hasText: "31/10/2026" }).filter({ hasText: "demo-poster.png" }).first().waitFor();
+      await row.getByTestId("candidate").filter({ hasText: "06/11/2026" }).filter({ hasText: "demo-notice.pdf" }).first().waitFor();
       return "poster 31/10/2026 vs notice/report/attendance 06/11/2026";
     });
     await step("Reviewer resolves the conflict, confirms low-confidence values, marks title as smoke test", async () => {
-      await page.locator("div.rounded-md", { hasText: "06/11/2026" }).filter({ hasText: "demo-activity-report-scan.pdf" }).first()
+      await page.getByTestId("field-activity_date").getByTestId("candidate").filter({ hasText: "06/11/2026" }).filter({ hasText: "demo-activity-report-scan.pdf" }).first()
         .getByRole("button", { name: "Use this value" }).click();
-      await page.locator("tr", { hasText: "Date of Activity" }).first().getByText("Selected by reviewer").waitFor();
+      await page.getByTestId("field-activity_date").getByText(/Selected by reviewer/).waitFor();
       const confirm = page.getByRole("button", { name: "Confirm", exact: true });
       let n = 0;
       while ((await confirm.count()) && n < 20) {
@@ -165,44 +165,45 @@ async function main() {
         await page.waitForTimeout(700);
         n++;
       }
-      const title = page.locator("tr", { hasText: "Title of the Activity" }).first();
+      const title = page.getByTestId("field-title");
       await title.getByRole("button", { name: "Edit" }).click();
       await title.locator("input.input").first().fill("[SMOKE TEST] Engineering Drawing Quiz (synthetic)");
       await title.getByRole("button", { name: "Save" }).click();
-      await page.locator("tr", { hasText: "Title of the Activity" }).first().getByText("Originally extracted").waitFor();
+      await page.getByTestId("field-title").getByText(/Originally extracted/).waitFor();
       return `${n} low-confidence value(s) confirmed; manual edit kept original value`;
     });
     await step("Attendance mismatch flagged, then reconciled by reviewer", async () => {
-      await page.getByRole("button", { name: /3 · Attendance/ }).click();
+      await page.getByRole("tab", { name: /^Attendance/ }).click();
       await page.getByText(/Participant-count mismatch detected: 7 attendance rows vs stated total 8/).waitFor();
-      const add = page.locator("tr.bg-slate-50");
+      const add = page.getByTestId("new-attendance-row");
       await add.getByPlaceholder("#").fill("8");
       await add.getByPlaceholder("Name as written on the sheet").fill("Demo Student Harsh");
       await add.locator("select").selectOption({ label: "Male" });
       await add.getByRole("button", { name: "Add row" }).click();
+      await page.getByTestId("attendance-row").filter({ has: page.locator("input[value='Demo Student Harsh']") }).waitFor({ timeout: 30_000 });
       await page.getByRole("button", { name: "Mark all rows verified" }).click();
-      await page.getByText("8 of 8").first().waitFor({ timeout: 30_000 });
-      await page.getByText("PASS").first().waitFor();
+      await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
+      await page.getByText("Reconciled", { exact: true }).first().waitFor({ timeout: 30_000 });
       return "7 OCR rows → FAIL; +1 verified row → PASS";
     });
     await step("Generate Activity Report, Detailed Report and Attendance Summary", async () => {
-      await page.getByRole("button", { name: /4 · Reports/ }).click();
-      await page.getByRole("button", { name: /Generate reports/ }).click();
+      await page.getByRole("tab", { name: "Reports" }).click();
+      await page.getByRole("button", { name: /Generate reports/ }).first().click();
       await page.locator(".paper").getByText("[SMOKE TEST] Engineering Drawing Quiz (synthetic)").first().waitFor({ timeout: 60_000 });
-      await page.getByRole("button", { name: "Detailed Report", exact: true }).click();
+      await page.getByRole("radio", { name: "Detailed Report" }).click();
       await page.locator(".paper").getByText("Impact Analysis:").waitFor();
-      await page.getByRole("button", { name: "Attendance Summary", exact: true }).click();
+      await page.getByRole("radio", { name: "Attendance Summary" }).click();
       await page.locator(".paper").getByText("Reconciliation: PASS").waitFor();
     });
     await step("Approve (human action) → read-only", async () => {
-      await page.getByRole("button", { name: /5 · Approve/ }).click();
+      await page.getByRole("tab", { name: "Approve" }).click();
       await page.getByText("No blocking issues").waitFor();
       await page.getByRole("button", { name: "Approve", exact: true }).click();
       await page.getByText(/Approved by /).first().waitFor({ timeout: 30_000 });
       await page.getByText("This activity is approved and read-only.").waitFor();
     });
     await step("Download DOCX and PDF exports and validate them", async () => {
-      await page.getByRole("button", { name: /4 · Reports/ }).click();
+      await page.getByRole("tab", { name: "Reports" }).click();
       const link = (n: string) => page.getByRole("link", { name: n });
       const docx = await download(() => link("Activity Report (.docx)").click());
       const xml = await (await JSZip.loadAsync(docx.bytes)).file("word/document.xml")!.async("string");
@@ -221,9 +222,9 @@ async function main() {
       return checked.join(", ");
     });
     await step("Audit trail records the workflow", async () => {
-      await page.getByRole("button", { name: "History" }).click();
+      await page.getByRole("tab", { name: "Audit" }).click();
       for (const a of ["Created activity", "Uploaded document", "Extraction complete", "Conflict resolved", "Field edited", "Reports generated", "Activity approved", "Export downloaded"]) {
-        await page.getByRole("cell", { name: a }).first().waitFor();
+        await page.getByText(a, { exact: true }).first().waitFor();
       }
     });
     await step("Create temporary faculty account (random password, not shown)", async () => {
@@ -255,7 +256,8 @@ async function main() {
       await row.getByRole("button", { name: "Deactivate" }).click();
       await row.getByText("Deactivated").waitFor({ timeout: 30_000 });
       await page.goto(`${activityUrl}?tab=approval`);
-      await page.getByRole("button", { name: "Archive" }).click();
+      await page.getByRole("button", { name: "Archive" }).first().click();
+      await page.getByRole("dialog").getByRole("button", { name: "Archive" }).click();
       await page.getByText("This activity is archived and read-only.").waitFor({ timeout: 30_000 });
     });
     await step("Logout and protected routes are closed again", async () => {

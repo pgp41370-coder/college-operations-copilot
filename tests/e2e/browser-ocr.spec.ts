@@ -29,9 +29,9 @@ test("scanned activity report is OCR'd in the browser and fields are extracted w
   await page.getByLabel("Document type").selectOption({ label: "Existing activity report" });
   await page.locator('input[type="file"]').setInputFiles({ name: "activity-report-scan.pdf", mimeType: "application/pdf", buffer });
   await expect(page.getByText(/Extracted 1 page/)).toBeVisible({ timeout: 170_000 });
-  await page.getByRole("button", { name: "2 · Review fields" }).click();
-  const row = page.locator("tr", { hasText: "Category of the Activity" }).first();
+  await page.getByRole("tab", { name: /^Review/ }).click();
+  const row = page.getByTestId("field-category");
   await expect(row).toContainText("Social Resposibility");
-  await expect(page.locator("tr", { hasText: "Total students" }).first()).toContainText("45");
-  await expect(page.locator("tr", { hasText: "Date of Activity" }).first()).toContainText("06/11/2024");
+  await expect(page.getByTestId("field-total_count")).toContainText("45");
+  await expect(page.getByTestId("field-activity_date")).toContainText("06/11/2024");
 });

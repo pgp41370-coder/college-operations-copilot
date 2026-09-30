@@ -21,14 +21,15 @@ There is **no demo mode with fake data** in the application. A new deployment st
 
 1. Start from a local database: `npm run db:migrate`, then `npm run user:create …`, then `npm run fixtures:load -- --owner <you>`.
 2. Sign in and open either pilot activity. Each packet was split into one file per document kind, and each file's source information records the original pages.
-3. Open **Review fields**. Show:
+3. Open the **Review** tab. Show:
    - that each value has a source page and rule;
    - the **Date of Activity conflict**: the poster's 31/10/2024 against the notice and reports' 06/11/2024;
-   - the notice issue date kept as a separate field.
-4. Open **Attendance**. Show the OCR draft rows (unverified) and the reconciliation, which will not PASS until the rows are checked.
+   - the notice issue date kept as a separate field;
+   - **Preview source**, which opens the cited page beside the extracted text excerpt.
+4. Open **Attendance**. Show the OCR draft rows (marked "Needs verification") and the reconciliation, which will not show "Reconciled" until the rows are checked.
 5. Resolve the date by choosing a candidate. Confirm the low-confidence values. Verify or correct the attendance, or record an acknowledgement.
 6. Open **Reports**. Generate, preview, and download the DOCX and PDF files, then the compiled packet and the evidence ZIP.
-7. **Approve**, then open **History** to show the audit trail.
+7. **Approve**, then open **Audit** to show the audit timeline. The step bar above the tabs shows the same progress throughout.
 
 ## Demo walkthrough (hosted, no real documents)
 

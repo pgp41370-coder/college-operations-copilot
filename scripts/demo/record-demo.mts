@@ -229,7 +229,7 @@ async function uploadDoc(kind: string, file: string, doneText: RegExp, note: str
   if (captionText) await type(page.getByLabel(/Caption/), captionText);
   await hold(400);
   await page.locator('input[type="file"]').setInputFiles(path.join(IN, file));
-  await page.locator("div.rounded-md", { hasText: file }).filter({ hasText: doneText }).first().waitFor({ timeout: 180_000 });
+  await page.getByTestId("upload-job").filter({ hasText: file }).filter({ hasText: doneText }).first().waitFor({ timeout: 180_000 });
   await hold(1400);
 }
 
@@ -265,7 +265,7 @@ async function main() {
     await caption("Dashboard: activities by status, recent changes, and a Create activity button.", 3200);
 
     // ---------------------------------------------------------------- create
-    await click(page.getByRole("link", { name: "Create Activity", exact: true }));
+    await click(page.getByRole("link", { name: "Create Activity", exact: true }).first());
     await caption("Step 1 — Create the activity. Every field is optional here and nothing is pre-filled.", 2400);
     await smoothScroll(700);
     await hold(800);
@@ -286,24 +286,24 @@ async function main() {
     await smoothScroll(-500);
 
     // ---------------------------------------------------------------- review
-    await click(page.getByRole("button", { name: /2 · Review fields/ }), 800);
+    await click(page.getByRole("tab", { name: /^Review/ }), 800);
     await caption("Step 3 — Review. Every value shows its source document, page, extraction rule and confidence.", 3400);
     await smoothScroll(300);
     await caption("Category, title, coordinator, counts… read from the scanned report by deterministic rules (no AI model).", 3000);
-    const dateRow = page.locator("tr", { hasText: "Date of Activity" }).first();
+    const dateRow = page.getByTestId("field-activity_date");
     await moveTo(dateRow);
     await caption("CONFLICT: the poster prints 31 Oct 2026, while the notice, report and attendance sheet say 6 Nov 2026.", 3800);
     await caption("The system does not pick one. It shows each source with the exact snippet, and blocks approval until a person decides.", 3800);
-    const choice = page.locator("div.rounded-md", { hasText: "06/11/2026" }).filter({ hasText: "demo-activity-report-scan.pdf" }).first();
+    const choice = dateRow.getByTestId("candidate").filter({ hasText: "06/11/2026" }).filter({ hasText: "demo-activity-report-scan.pdf" }).first();
     await moveTo(choice);
     await hold(800);
     await click(choice.getByRole("button", { name: "Use this value" }), 1500);
     await caption("Resolved by the reviewer — the choice keeps its provenance and is written to the audit log.", 3000);
-    const venue = page.locator("tr", { hasText: "Venue" }).first();
+    const venue = page.getByTestId("field-venue");
     await moveTo(venue);
     await caption("Low-confidence values (below 80%) must be confirmed by a person before approval.", 2600);
     await click(venue.getByRole("button", { name: "Confirm" }), 1400);
-    const hod = page.locator("tr", { hasText: "HoD / Committee Incharge" }).first();
+    const hod = page.getByTestId("field-hod_name");
     await moveTo(hod);
     await caption("Signatory names are entered by faculty — never copied or invented.", 2200);
     await click(hod.getByRole("button", { name: "Edit" }));
@@ -319,23 +319,24 @@ async function main() {
     // ---------------------------------------------------------------- attendance
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     await hold(700);
-    await click(page.getByRole("button", { name: /3 · Attendance/ }), 800);
+    await click(page.getByRole("tab", { name: /^Attendance/ }), 800);
     await caption("Step 4 — Attendance. OCR drafted 7 rows; the report states 8 participants.", 3200);
     await caption("Participant-count mismatch detected — flagged, never silently corrected. Gender is taken only from the sheet, never from names.", 4200);
     await smoothScroll(420);
     await caption("The reviewer checks each row against the paper sheet and adds the participant missing from it.", 2600);
-    const add = page.locator("tr.bg-slate-50");
+    const add = page.getByTestId("new-attendance-row");
     await type(add.getByPlaceholder("#"), "8");
     await type(add.getByPlaceholder("Name as written on the sheet"), "Demo Student Harsh");
     await add.locator("select").selectOption({ label: "Male" });
     await click(add.getByRole("button", { name: "Add row" }), 1500);
-    await click(page.getByRole("button", { name: "Mark all rows verified" }), 1500);
+    await click(page.getByRole("button", { name: "Mark all rows verified" }), 900);
+    await click(page.getByRole("dialog").getByRole("button", { name: "Confirm" }), 1500);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }));
     await hold(900);
     await caption("Reconciliation now passes: 8 rows = 5 male + 3 female = stated total 8, all rows verified.", 3600);
 
     // ---------------------------------------------------------------- reports
-    await click(page.getByRole("button", { name: /4 · Reports/ }), 800);
+    await click(page.getByRole("tab", { name: "Reports" }), 800);
     await caption("Step 5 — Generate reports from the reviewed fields using the institution's template.", 2400);
     await click(page.getByRole("button", { name: /Generate reports/ }), 800);
     await page.locator(".paper").waitFor();
@@ -343,12 +344,12 @@ async function main() {
     await smoothScroll(1100, 40);
     await hold(1200);
     await smoothScroll(-1100, 30);
-    await click(page.getByRole("button", { name: "Detailed Report", exact: true }), 900);
+    await click(page.getByRole("radio", { name: "Detailed Report" }), 900);
     await caption("Detailed Report — the narrative is assembled only from existing fields, and the app says which ones.", 3200);
     await smoothScroll(900, 36);
     await hold(1000);
     await smoothScroll(-900, 30);
-    await click(page.getByRole("button", { name: "Attendance Summary", exact: true }), 900);
+    await click(page.getByRole("radio", { name: "Attendance Summary" }), 900);
     await caption("Attendance Summary — stated vs recorded counts, reconciliation result and source documents.", 3000);
     await smoothScroll(500);
     await hold(800);
@@ -367,15 +368,15 @@ async function main() {
     await caption("Draft exports carry a 'DRAFT — not yet approved' footer until a faculty member approves.", 2600);
 
     // ---------------------------------------------------------------- approve
-    await click(page.getByRole("button", { name: /5 · Approve/ }), 900);
+    await click(page.getByRole("tab", { name: "Approve" }), 900);
     await caption("Step 6 — Approval. Only an authenticated person can approve, and only when no blocking issue remains.", 3200);
     await click(page.getByRole("button", { name: "Approve", exact: true }), 1500);
     await caption("Approved: approver and time are recorded and the activity becomes read-only.", 3000);
-    await click(page.getByRole("button", { name: "4 · Reports" }), 600);
+    await click(page.getByRole("tab", { name: "Reports" }), 600);
     await download(() => click(dl("Activity Report (.pdf)"), 300), "approved-activity-report.pdf");
     await download(() => click(dl("Activity Report (.docx)"), 300), "approved-activity-report.docx");
     await download(() => click(page.getByRole("button", { name: "Compiled activity packet (.pdf)" }), 300), "approved-activity-packet.pdf");
-    await click(page.getByRole("button", { name: "History" }), 900);
+    await click(page.getByRole("tab", { name: "Audit" }), 900);
     await caption("Audit trail: every upload, extraction, decision, generation, export and approval — who and when.", 3600);
     await smoothScroll(600);
     await hold(1500);
