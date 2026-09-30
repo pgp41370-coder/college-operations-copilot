@@ -98,5 +98,6 @@ The full scripted workflow was also verified locally: 93 Vitest tests and 6 Play
 | 29 Sep 2026 | `bcd9075` | Ready (no database) |
 | 29 Sep 2026 | `6f89224`, `7119b13` | Blocked by Vercel `TEAM_ACCESS_REQUIRED` (commit author not linked to the Vercel account) |
 | 30 Sep 2026 | `0f6d7c7` | Ready, after the owner connected GitHub under Login Connections |
-| 30 Sep 2026 | `660f20d` | **Ready, current production.** Database connected, migrations current, region `iad1`. Later commits (`35d5465`, `31fb559`, `bedaf71`, `4e1fc9a`) change only scripts and docs, so the running application is identical. |
+| 30 Sep 2026 | `660f20d` | Ready. Database connected, migrations current, region `iad1`. Later commits (`35d5465`, `31fb559`, `bedaf71`, `4e1fc9a`) change only scripts and docs, so the running application is identical. |
 | 30 Sep 2026 | — | Production smoke test 24/24 passed; the deployment is **live** |
+| 1 Oct 2026 | `f06c085` | **Ready, current production.** Docs-only changes since `660f20d` (application code identical). The first attempt returned a transient "Not authorized" error; the retry succeeded. |
