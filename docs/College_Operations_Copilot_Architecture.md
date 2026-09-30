@@ -56,7 +56,7 @@ A 5-response faculty survey (28 Sep 2026) also points to this workflow. 4 of 5 r
 
 ![System architecture as implemented (derived from src/ at commit 7119b13)](architecture/system-architecture.mmd){h200 legend=impl,opt,human}
 
-All boxes are implemented and exercised by automated tests (90 Vitest + 6 Playwright). Code locations are listed in the System Design document.
+All boxes are implemented and exercised by automated tests (93 Vitest + 6 Playwright). Code locations are listed in the System Design document.
 
 <div class="page-break"></div>
 
@@ -180,18 +180,18 @@ This design is deliberately **not** fully autonomous.
 
 ## 8. Deployment architecture — current state
 
-![Deployment topology as verified on 29 Sep 2026](architecture/deployment-architecture.mmd){h110 legend=impl,opt,pending,neutral}
+![Deployment topology as verified on 30 Sep 2026](architecture/deployment-architecture.mmd){h110 legend=impl,opt,neutral}
 
-| Item | Verified state (29 Sep 2026) |
+| Item | Verified state (30 Sep 2026) |
 |---|---|
-| Local end-to-end | **Working.** 90 Vitest tests (unit, Postgres integration, permissions, exports, two real reference cases) and 6 Playwright browser tests against the production build pass, including real in-browser OCR. |
+| Local end-to-end | **Working.** 93 Vitest tests (unit, Postgres integration, permissions, exports, two real reference cases) and 6 Playwright browser tests against the production build pass, including real in-browser OCR. |
 | Source code | Pushed to a **private** GitHub repository. |
-| Vercel deployment | Exists (Hobby plan, region `bom1`): `college-operations-copilot.vercel.app`, serving commit `bcd9075`. |
-| Production database | **Not yet attached.** A free-tier Postgres (Neon) must be provisioned by the account owner. |
-| Later deployments | **Blocked** by Vercel team-access configuration (`TEAM_ACCESS_REQUIRED` for the commit author). |
-| Signed-in flow on the live URL | **Not verified**, because no database is attached. The product is **not** described as fully live. |
+| Vercel deployment | **Live** (Hobby plan, region `iad1`, next to the database): `college-operations-copilot.vercel.app`. |
+| Production database | **Neon Postgres, Free plan** (`us-east-1`), connected through the Vercel Marketplace. Migrations current; the schema was verified object by object against a reference database. |
+| Deployments | Made with the Vercel CLI. An earlier `TEAM_ACCESS_REQUIRED` block was resolved by linking the owner's GitHub login to the Vercel account. |
+| Signed-in flow on the live URL | **Verified.** Production smoke test 24/24 (login, upload, OCR, provenance, date conflict, attendance, reports, approval, DOCX/PDF export, access control, logout), cross-checked in the production database. Synthetic documents only. |
 
-**Current production topology** (once a database is attached):
+**Current production topology:**
 
 - **Browser.** UI, pdf.js text extraction, tesseract.js OCR (engine downloaded from jsDelivr), packet and ZIP assembly.
 - **Vercel Node functions.** Pages, API routes and domain services.
@@ -226,7 +226,7 @@ No paid service is used.
 | Operations Agent | <span class="status future">FUTURE</span> | — |
 | Multi-agent orchestration | <span class="status future">FUTURE</span> | — |
 | Institution-wide / multi-department deployment | <span class="status future">FUTURE</span> | — |
-| Hosted production database | <span class="status future">PENDING — owner action</span> | see §8 |
+| Hosted production deployment (Vercel + Neon, free tiers) | <span class="status impl">LIVE — VERIFIED</span> | production smoke test 24/24, §8 |
 
 <div class="page-break"></div>
 
@@ -259,7 +259,7 @@ All phases after Phase 1 are **future roadmap**. Nothing in them is built.
 
 | Phase | Scope | Status |
 |---|---|---|
-| **Phase 1 — Activity Documentation Automation** | Evidence upload, extraction with provenance, conflict and attendance checks, three reports, approval, exports, audit | <span class="status impl">CURRENT — IMPLEMENTED</span> (hosted database pending) |
+| **Phase 1 — Activity Documentation Automation** | Evidence upload, extraction with provenance, conflict and attendance checks, three reports, approval, exports, audit | <span class="status impl">CURRENT — IMPLEMENTED</span> (live, verified) |
 | **Phase 2 — College Knowledge Agent** | Question answering over the timetable, academic calendar and notices, every answer citing page sources. The two sample documents already in the pilot folder (calendar, timetable) motivate this phase. | <span class="status future">FUTURE</span> |
 | **Phase 3 — Workflow & Follow-up Agents** | Reminders for missing evidence and pending approvals (drafts, human-sent); Intake and Document Understanding agents; per-page classification of compiled scans | <span class="status future">FUTURE</span> |
 | **Phase 4 — Student-facing assistant** | Read-only answers for students from approved institutional sources | <span class="status future">FUTURE</span> |

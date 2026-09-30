@@ -1,4 +1,4 @@
-%% Deployment topology as verified on 29 Sep 2026. Red dashed = required but NOT yet provisioned.
+%% Deployment topology as verified on 30 Sep 2026 (production smoke test 24/24 passed).
 flowchart TB
   subgraph DEV["User device — browser"]
     direction LR
@@ -8,20 +8,20 @@ flowchart TB
     UIX ~~~ OCR ~~~ PKX
   end
   CDN["jsDelivr CDN<br/>OCR engine + English data<br/>(documents never sent)"]:::neutral
-  subgraph VER["Vercel — Hobby plan · region bom1 (Mumbai)"]
+  subgraph VER["Vercel — Hobby plan · region iad1 (Washington, D.C.)"]
     direction LR
-    APP["Next.js 16 app<br/>pages + 20 API routes"]:::impl
+    APP["Next.js 16 app<br/>pages + 21 API routes"]:::impl
     SVC["Domain services<br/>parser · resolution · reports<br/>exports · audit"]:::impl
     APP --> SVC
   end
   GH["GitHub (private)<br/>source repository"]:::neutral
-  PG[("Hosted PostgreSQL<br/>NOT YET ATTACHED<br/>free-tier Neon planned")]:::pending
+  PG[("Neon Postgres — Free plan<br/>us-east-1 · connected<br/>migrations current")]:::impl
   LLM["Optional LLM endpoint<br/>not configured"]:::opt
   LOCAL[("Local PostgreSQL 16<br/>dev · test · E2E<br/>end-to-end verified")]:::impl
   DEV -- "HTTPS" --> VER
   DEV -. "engine download" .-> CDN
   GH -. "CLI deploy" .-> VER
-  VER -- "DATABASE_URL (pending)" --> PG
+  VER -- "pooled TLS connection" --> PG
   VER -. "if configured" .-> LLM
   PG ~~~ LOCAL
   classDef impl fill:#e6f4ea,stroke:#1f7a45,stroke-width:1.5px,color:#0f2e1c

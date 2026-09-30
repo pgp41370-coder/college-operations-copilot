@@ -15,7 +15,7 @@ flowchart TB
 
   subgraph EDGE["SERVER — Vercel serverless route handlers"]
     direction LR
-    API["<b>API layer</b><br/>20 route files · session · same-origin · zod · rate limits"]:::impl
+    API["<b>API layer</b><br/>21 route files · session · same-origin · zod · rate limits"]:::impl
     AI["<b>Optional LLM adapter</b><br/>grounded-quote check<br/>OFF by default"]:::opt
     API -. "only if configured" .-> AI
   end

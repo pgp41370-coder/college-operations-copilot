@@ -2,7 +2,7 @@
 
 **Engineering reference for the implemented system** · Version 1.0 · 29 September 2026 · software at commit `7119b13`
 
-> Everything in this document describes **implemented code**, unless it is marked <span class="status future">FUTURE</span>. Status labels: <span class="status impl">IMPLEMENTED</span> <span class="status opt">OPTIONAL · OFF BY DEFAULT</span> <span class="status future">FUTURE</span>. Verification: 90 Vitest tests (unit, Postgres integration, permissions, exports, two real reference cases) and 6 Playwright end-to-end tests against the production build.
+> Everything in this document describes **implemented code**, unless it is marked <span class="status future">FUTURE</span>. Status labels: <span class="status impl">IMPLEMENTED</span> <span class="status opt">OPTIONAL · OFF BY DEFAULT</span> <span class="status future">FUTURE</span>. Verification: 93 Vitest tests (unit, Postgres integration, permissions, exports, two real reference cases) and 6 Playwright end-to-end tests against the production build.
 
 ## 1. System components
 
@@ -11,7 +11,7 @@
 | UI (browser) | `src/app/(app)/**`, `src/components/*` | Dashboard, Activities, Create Activity, 7-tab workspace, Documents viewer, Reports, Templates, Audit Log, Settings, print view |
 | Browser extraction | `src/lib/extraction/browser.ts`, `layout.ts` | pdf.js text layer with geometric line rebuild; tesseract.js OCR for pages with fewer than 200 characters |
 | Client exports | `src/lib/exports/packet.ts` | Compiled packet PDF and evidence ZIP, assembled from authorised endpoints |
-| API | `src/app/api/**/route.ts` (20 files) | Session check, same-origin check, zod validation, rate limits, error mapping (`errors.ts`) |
+| API | `src/app/api/**/route.ts` (21 files) | Session check, same-origin check, zod validation, rate limits, error mapping (`errors.ts`) |
 | Auth | `server/auth-core.ts`, `server/auth.ts` | bcrypt passwords, hashed session tokens, cookie handling |
 | Activity service | `server/activities.ts` | Access control, fields, sources, extraction ingest, attendance, reports, approval, status |
 | Parser | `extraction/parser.ts`, `attendance.ts` | Deterministic candidate extraction per document kind; attendance row drafts |
@@ -66,6 +66,7 @@ All mutating routes require a session **and** a same-origin `Origin` header. Bod
 | POST · PATCH | `/api/admin/users` · `/api/admin/users/{id}` | Create user · activate, deactivate, change role, reset password (admin) |
 | PUT | `/api/templates/{id}` | Save an edited template as a new version (admin; validated) |
 | GET | `/api/health` | Database connectivity and migration state; no configuration values revealed |
+| GET | `/api/health/db` | Schema health: latest migration, tables present vs expected, index and constraint counts |
 
 ## 4. Upload and OCR flow
 
@@ -164,12 +165,13 @@ Approval requires an authenticated user and zero blocking issues. It records `ap
 
 ## 11. Deployment topology
 
-![Deployment topology as verified on 29 Sep 2026](architecture/deployment-architecture.mmd){h110 legend=impl,opt,pending,neutral}
+![Deployment topology as verified on 30 Sep 2026](architecture/deployment-architecture.mmd){h110 legend=impl,opt,neutral}
 
 | Environment | State |
 |---|---|
 | Local (dev / test / E2E) | PostgreSQL 16; full workflow verified with Playwright against the production build |
-| Vercel production | Hobby plan, region `bom1`, serving commit `bcd9075`. `vercel-build` runs migrations when `DATABASE_URL` is set. **No database is attached yet.** Later deployments are **blocked** by Vercel team access (`TEAM_ACCESS_REQUIRED`). |
+| Vercel production | **Live.** Hobby plan, region `iad1`. `vercel-build` runs migrations (direct connection) before `next build`. Signed-in production smoke test: 24/24 passed. |
+| Database | Neon Postgres, Free plan, `us-east-1`; pooled TLS connection at runtime, `DATABASE_URL_UNPOOLED` for migrations |
 | Configuration | `DATABASE_URL` (required); `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` (optional, unset) |
 
 ## 12. Failure handling

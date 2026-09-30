@@ -48,7 +48,10 @@ Neither endpoint returns connection strings, hostnames or data.
 
 - Real reference documents (`reference-data/`) are git-ignored and excluded by `.vercelignore`. The deployment's file list was checked: none were uploaded.
 - `.env.local`, `.env.production.local`, `.local-credentials` and `.vercel` are git-ignored.
-- **Warning: `.env.local` now contains the PRODUCTION database credentials.** Neon's variables target Development too. A local `npm run dev` would therefore read and write the production database. For local development, set a local `DATABASE_URL` in `.env.development.local`, or run `npm run dev` with `DATABASE_URL` pointing at a local database. Automated tests are isolated from this: Vitest uses its own local test database, and Playwright blanks all `PG*` variables.
+- **`.env.local` contains the PRODUCTION database credentials.** The Vercel CLI pulled them because Neon's variables also target Development.
+  - `.env.development.local` (git-ignored) overrides them for `next dev`, pointing at the local `college_ops_dev` database with the `PG*` variables blanked. Verified with Next's own env loader.
+  - A plain local `next start` still reads `.env.local`, and so the production database. The Playwright tests and the demo recorder always pass their own local `DATABASE_URL`.
+  - `npx tsx --env-file=.env.local …` (used by `create-user`) targets production **on purpose**.
 
 ## Creating the first administrator
 
