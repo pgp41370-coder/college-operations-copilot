@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Video compositor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=block" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0d1c; --bg2: #11142a; --panel: #161a33; --line: #2a2f52; --fg: #eef0ff; --fg2: #b7bce0; --muted: #8389b8;
+    --brand: #6366f1; --brand2: #818cf8; --brand-soft: rgba(99,102,241,.16);
+    --ok: #34d399; --ok-soft: rgba(52,211,153,.14); --warn: #fbbf24; --warn-soft: rgba(251,191,36,.14); --bad: #f87171; --bad-soft: rgba(248,113,113,.14);
+    --teal: #2dd4bf;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); font-family: Geist, -apple-system, "Helvetica Neue", Arial, sans-serif; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  .layer { position: absolute; inset: 0; }
+  .bg-grad { background: radial-gradient(1200px 700px at 78% -10%, rgba(99,102,241,.28), transparent 60%), radial-gradient(900px 600px at -10% 110%, rgba(45,212,191,.10), transparent 60%), var(--bg); }
+  .grid-bg { background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 64px 64px; mask-image: radial-gradient(1000px 700px at 50% 40%, #000, transparent 85%); }
+  .eyebrow { font-size: 20px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--brand2); }
+  .h1 { font-size: 64px; font-weight: 700; letter-spacing: -.025em; line-height: 1.08; }
+  .h2 { font-size: 46px; font-weight: 650; letter-spacing: -.02em; line-height: 1.15; }
+  .sub { font-size: 26px; color: var(--fg2); line-height: 1.45; }
+  .chip { position: absolute; left: 80px; top: 64px; display: inline-flex; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 999px; font-size: 17px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; border: 1.5px solid; }
+  .chip.current { color: #c7d2fe; border-color: rgba(129,140,248,.6); background: rgba(99,102,241,.14); }
+  .chip.future { color: #fde68a; border: 2px dashed rgba(251,191,36,.8); background: rgba(251,191,36,.10); }
+  .chip.pilot { color: #99f6e4; border-color: rgba(45,212,191,.6); background: rgba(45,212,191,.10); }
+  .chip.context { color: var(--fg2); border-color: var(--line); background: rgba(255,255,255,.03); }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+  .card { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1.5px solid var(--line); border-radius: 18px; }
+  .icon svg { width: 100%; height: 100%; }
+  .abs { position: absolute; }
+  .center { display: flex; align-items: center; justify-content: center; }
+  .muted { color: var(--muted); }
+  /* footage */
+  #foot { position: absolute; inset: 0; overflow: hidden; background: #f6f7fb; }
+  #foot img { position: absolute; left: 0; top: 0; transform-origin: 0 0; width: 1920px; height: 1080px; }
+  .callout { position: absolute; border-radius: 12px; border: 3.5px solid var(--brand); box-shadow: 0 0 0 6px rgba(99,102,241,.18), 0 10px 40px rgba(17,24,39,.18); }
+  .callout.danger { border-color: #e11d48; box-shadow: 0 0 0 6px rgba(225,29,72,.16), 0 10px 40px rgba(17,24,39,.18); }
+  .callout.success { border-color: #059669; box-shadow: 0 0 0 6px rgba(5,150,105,.16), 0 10px 40px rgba(17,24,39,.18); }
+  .callout.warning { border-color: #d97706; box-shadow: 0 0 0 6px rgba(217,119,6,.16), 0 10px 40px rgba(17,24,39,.18); }
+  .clabel { position: absolute; white-space: nowrap; padding: 9px 16px; border-radius: 10px; font-size: 22px; font-weight: 650; color: #fff; background: #4338ca; box-shadow: 0 8px 24px rgba(17,24,39,.25); }
+  .clabel.danger { background: #be123c; } .clabel.success { background: #047857; } .clabel.warning { background: #b45309; }
+  .dim { position: absolute; inset: 0; background: rgba(15,17,35,.0); }
+  .badges { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 10px; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px; border-radius: 999px; font-size: 17px; font-weight: 600; background: rgba(17,20,42,.88); color: #e0e7ff; border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); }
+  .badge .live { width: 9px; height: 9px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgba(52,211,153,.25); }
+  .badge.amber { color: #fde68a; }
+  .caption { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); max-width: 1500px; padding: 14px 26px; border-radius: 14px; background: rgba(10,12,28,.86); color: #fff; font-size: 34px; font-weight: 600; line-height: 1.3; text-align: center; }
+  .lower { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-radius: 16px; background: rgba(17,20,42,.92); border: 1px solid rgba(255,255,255,.12); }
+  .lower .step { font-size: 22px; font-weight: 600; padding: 8px 14px; border-radius: 10px; }
+  .arrow { color: var(--muted); font-size: 24px; }
+  .typer { white-space: pre-wrap; }
+  .hl { color: var(--brand2); }
+  svg.lines { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: visible; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+const W = 1920, H = 1080;
+const $ = (h) => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = (x) => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const prog = (t, at, dur = .6) => ease((t - at) / dur);
+function appear(el, t, at, opts = {}) {
+  if (!el) return;
+  const p = prog(t, at, opts.dur ?? .6);
+  el.style.opacity = String(p * (opts.max ?? 1));
+  const dy = (opts.dy ?? 18) * (1 - p), dx = (opts.dx ?? 0) * (1 - p), s = 1 - (opts.scale ?? 0) * (1 - p);
+  el.style.transform = `${opts.base ?? ""} translate(${dx}px, ${dy}px) scale(${s})`;
+}
+const icon = (name, size = 28, color = "currentColor") => `<span class="icon" style="display:inline-block;width:${size}px;height:${size}px;color:${color}">${(window.ICONS || {})[name] || ""}</span>`;
+const chipHtml = (status) => {
+  const map = { "CURRENT PRODUCT": ["current", "Current product"], "FUTURE ROADMAP": ["future", "Future roadmap · not built yet"], "PILOT": ["pilot", "Pilot · planned"], "CONTEXT": ["context", ""] };
+  const [cls, label] = map[status] || ["context", status];
+  return label ? `<div class="chip ${cls}"><span class="dot"></span>${label}</div>` : "";
+};
+const cueOf = (f, i) => f.cues[Math.min(i, f.cues.length - 1)] ?? 0;
+
+/* ------------------------------------------------------------------ scenes */
+const SCENES = {};
+let built = null, root = null;
+
+SCENES["s01-problem"] = {
+  build(f) {
+    const docs = [
+      ["poster", "Poster", f.assets.poster], ["notice", "Notice", f.assets.notice], ["att", "Attendance sheet", f.assets.attendance],
+      ["photo", "Photographs", f.assets.photo], ["report", "Activity report", f.assets.report], ["approval", "Approval", null], ["final", "Final documentation", null],
+    ];
+    const cw = 214, gap = 36, x0 = (W - (docs.length * cw + (docs.length - 1) * gap)) / 2;
+    let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>
+      <div class="abs" style="left:80px;top:96px" id="title"><div class="eyebrow">The problem</div><div class="h2" style="margin-top:14px">One activity, many documents</div></div>`;
+    docs.forEach(([id, label, src], i) => {
+      const x = x0 + i * (cw + gap);
+      const inner = src
+        ? `<div style="height:250px;border-radius:12px;overflow:hidden;background:#fff"><img src="${src}" style="width:100%;height:100%;object-fit:cover;object-position:top"></div>`
+        : `<div class="center" style="height:250px;border-radius:12px;background:rgba(255,255,255,.04);border:1.5px dashed var(--line);flex-direction:column;gap:14px;color:var(--fg2)">${icon(id === "approval" ? "UserCheck" : "FileStack", 64, "#a5b4fc")}<span style="font-size:18px">${id === "approval" ? "Faculty sign-off" : "Filed record"}</span></div>`;
+      html += `<div class="abs card" id="d-${id}" style="left:${x}px;top:330px;width:${cw}px;padding:12px">${inner}<div style="margin-top:12px;font-size:20px;font-weight:600;text-align:center">${label}</div></div>`;
+      if (i < docs.length - 1) html += `<div class="abs arrow" id="a-${i}" style="left:${x + cw + 4}px;top:455px;width:${gap - 8}px;text-align:center">→</div>`;
+    });
+    html += `<div class="abs" id="mismatch" style="left:${x0}px;top:296px;width:${2 * cw + gap}px;text-align:center"><span style="display:inline-block;padding:7px 14px;border-radius:999px;background:var(--bad-soft);border:1.5px solid rgba(248,113,113,.6);color:#fecaca;font-size:19px;font-weight:600">Poster: 31 Oct · Notice: 6 Nov</span></div>`;
+    const issues = [["Layers", "Information is scattered"], ["GitCompareArrows", "Dates and details may not match"], ["PenLine", "Attendance is often handwritten"], ["Copy", "Copied and checked by hand, every time"]];
+    const iw = 400, ig = 24, ix = (W - (4 * iw + 3 * ig)) / 2;
+    issues.forEach(([ic, t], i) => {
+      html += `<div class="abs card" id="i-${i}" style="left:${ix + i * (iw + ig)}px;top:780px;width:${iw}px;padding:20px 22px;display:flex;align-items:center;gap:16px">${icon(ic, 34, i === 1 ? "#fca5a5" : "#a5b4fc")}<span style="font-size:22px;font-weight:600;line-height:1.3">${t}</span></div>`;
+    });
+    return $(`<div class="layer">${html}</div>`);
+  },
+  update(f) {
+    const t = f.t, c1 = cueOf(f, 1), c2 = cueOf(f, 2), c3 = cueOf(f, 3), d1 = Math.max(2.5, c2 - c1);
+    appear(root.querySelector("#title"), t, cueOf(f, 0));
+    ["poster", "notice", "att", "photo", "report", "approval", "final"].forEach((id, i) => {
+      appear(root.querySelector(`#d-${id}`), t, c1 - .4 + (i * d1 * .8) / 7, { dy: 30 });
+      if (i < 6) appear(root.querySelector(`#a-${i}`), t, c1 - .2 + (i * d1 * .8) / 7, { dy: 0 });
+    });
+    appear(root.querySelector("#mismatch"), t, c2 + .8, { dy: 8 });
+    [0, 1, 2].forEach((i) => appear(root.querySelector(`#i-${i}`), t, c2 + i * Math.max(.9, (c3 - c2) / 3.2), { dy: 24 }));
+    appear(root.querySelector("#i-3"), t, c3 + .2, { dy: 24 });
+  },
+};
+
+SCENES["s02-question"] = {
+  build(f) {
+    return $(`<div class="layer"><div class="layer" style="background:radial-gradient(900px 600px at 50% 40%, rgba(99,102,241,.18), transparent 70%), var(--bg)"></div>
+      <div class="abs" style="left:0;right:0;top:250px;text-align:center" id="pre"><div class="eyebrow">The core question</div>
+        <div class="sub" style="margin-top:22px;font-size:30px">Generating a report is easy.<br/>Knowing it is <span style="color:#fff;font-weight:600">supported by evidence</span> is the hard part.</div></div>
+      <div class="abs" style="left:220px;right:220px;top:520px;text-align:center"><div class="h1 typer" id="q" style="font-size:66px"></div></div></div>`);
+  },
+  update(f) {
+    appear(root.querySelector("#pre"), f.t, cueOf(f, 0));
+    const full = "How can we automate the repetitive work without allowing AI to invent institutional facts?";
+    const cut = full.indexOf("without");
+    const p = clamp((f.t - cueOf(f, 1) + .2) / 3.2);
+    const n = Math.round(full.length * p);
+    const shown = full.slice(0, n);
+    const caret = p < 1 ? `<span style="color:var(--brand2)">▍</span>` : "";
+    root.querySelector("#q").innerHTML = n <= cut ? shown + caret : `${full.slice(0, cut)}<span class="hl">${full.slice(cut, n)}</span>${caret}`;
+  },
+};
+
+SCENES["s03-product"] = {
+  build(f) {
+    return $(`<div class="layer"><div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}
+      <div class="abs" id="brand" style="left:80px;top:250px;width:760px">
+        <div style="width:76px;height:76px;border-radius:18px;background:linear-gradient(135deg,#6366f1,#4338ca);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;box-shadow:0 12px 40px rgba(99,102,241,.45)">CO</div>
+        <div class="h1" style="margin-top:34px">College Operations<br/>Copilot</div>
+        <div class="sub" style="margin-top:22px">Evidence-grounded automation for institutional operations</div>
+        <div id="pills" style="margin-top:40px;display:flex;gap:12px">
+          ${["Evidence", "Validation", "Human approval"].map((p, i) => `<span id="pl-${i}" style="padding:10px 18px;border-radius:999px;border:1.5px solid rgba(129,140,248,.5);background:rgba(99,102,241,.12);font-size:21px;font-weight:600;color:#c7d2fe">${p}</span>`).join("")}
+        </div></div>
+      <div class="abs" id="shot" style="left:900px;top:190px;width:1100px;height:619px;border-radius:18px;overflow:hidden;border:1.5px solid rgba(255,255,255,.18);box-shadow:0 40px 120px rgba(0,0,0,.55)">
+        <img src="${f.assets.dashboard}" style="width:100%;height:100%;object-fit:cover;object-position:left top"/></div>
+      <div class="abs muted" id="cap" style="left:900px;top:828px;font-size:18px">The deployed app · dashboard</div></div>`);
+  },
+  update(f) {
+    appear(root.querySelector("#brand"), f.t, cueOf(f, 0), { dy: 24 });
+    appear(root.querySelector("#shot"), f.t, cueOf(f, 1) - .3, { dy: 0, dx: 80, dur: .9 });
+    appear(root.querySelector("#cap"), f.t, cueOf(f, 1) + .5);
+    [0, 1, 2].forEach((i) => appear(root.querySelector(`#pl-${i}`), f.t, cueOf(f, 1) + 2.4 + i * .35, { dy: 12 }));
+  },
+};
+
+const ARCH = [
+  ["FileStack", "Evidence", "PDF · JPG · PNG"],
+  ["UploadCloud", "Document ingestion", "validated · hashed · stored privately"],
+  ["ScanText", "OCR / extraction", "PDF text layer · Tesseract · rules"],
+  ["Link2", "Provenance", "document · page · rule · snippet"],
+  ["ListChecks", "Validation", "missing · low confidence"],
+  ["GitCompareArrows", "Conflict detection", "never auto-resolved"],
+  ["UserCheck", "Human review", "confirm · choose · correct", true],
+  ["FileText", "Report generation", "template · reviewed fields only"],
+  ["ShieldCheck", "Approval", "faculty only · then locked", true],
+  ["Download", "Export", "DOCX · PDF · packet · DRAFT until approved"],
+];
+SCENES["s04-architecture"] = {
+  build(f) {
+    const nw = 300, nh = 168, gx = 52, x0 = (W - (5 * nw + 4 * gx)) / 2, rows = [250, 520];
+    let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}
+      <div class="abs" style="left:80px;top:130px" id="ttl"><div class="h2">How the current system works</div></div>
+      <svg class="lines" id="svg"></svg>`;
+    const pos = [];
+    ARCH.forEach(([ic, label, sub, human], i) => {
+      const r = Math.floor(i / 5), c = i % 5, x = x0 + c * (nw + gx), y = rows[r];
+      pos.push([x, y]);
+      html += `<div class="abs card" id="n-${i}" style="left:${x}px;top:${y}px;width:${nw}px;height:${nh}px;padding:22px;${human ? "border-color:rgba(52,211,153,.55);background:linear-gradient(180deg,rgba(52,211,153,.10),rgba(52,211,153,.03))" : ""}">
+        <div style="display:flex;align-items:center;gap:12px">${icon(ic, 30, human ? "#6ee7b7" : "#a5b4fc")}<span style="font-size:24px;font-weight:650">${label}</span></div>
+        <div style="margin-top:14px;font-size:18px;color:var(--fg2);line-height:1.35">${sub}</div>
+        ${human ? `<div style="position:absolute;right:14px;top:14px;font-size:13px;font-weight:700;letter-spacing:.1em;color:#6ee7b7">HUMAN</div>` : ""}</div>`;
+    });
+    html += `<div class="abs" id="np" style="left:${x0}px;top:740px;display:flex;align-items:center;gap:14px;padding:14px 20px;border-radius:14px;background:var(--warn-soft);border:1.5px solid rgba(251,191,36,.5)">${icon("CircleSlash", 26, "#fcd34d")}<span style="font-size:22px;font-weight:600;color:#fde68a">Missing information → “Not provided”. Never filled in.</span></div>`;
+    const pr = [["AI assists", "#a5b4fc"], ["Evidence supports", "#a5b4fc"], ["Validation checks", "#fcd34d"], ["Humans approve", "#6ee7b7"]];
+    html += `<div class="abs" style="left:0;right:0;top:880px;display:flex;justify-content:center;gap:22px">${pr.map(([p, col], i) => `<span id="pr-${i}" style="font-size:32px;font-weight:700;color:${col}">${p}${i < 3 ? `<span style="color:var(--muted);margin-left:22px">·</span>` : ""}</span>`).join("")}</div>`;
+    const el = $(`<div class="layer">${html}</div>`);
+    const svg = el.querySelector("#svg");
+    let lines = "";
+    for (let i = 0; i < ARCH.length - 1; i++) {
+      const [x, y] = pos[i], [x2, y2] = pos[i + 1];
+      if (i === 4) lines += `<path id="l-${i}" d="M ${x + nw / 2} ${y + nh} C ${x + nw / 2} ${y + nh + 60}, ${x2 + nw / 2} ${y2 - 60}, ${x2 + nw / 2} ${y2}" stroke="#4b5294" stroke-width="3" fill="none" stroke-dasharray="6 7"/>`;
+      else lines += `<path id="l-${i}" d="M ${x + nw} ${y + nh / 2} L ${x2} ${y2 + nh / 2}" stroke="#4b5294" stroke-width="3" fill="none"/>`;
+    }
+    svg.innerHTML = lines;
+    return el;
+  },
+  update(f) {
+    const t = f.t, c = (i) => cueOf(f, i);
+    appear(root.querySelector("#ttl"), t, c(0) - .3);
+    const at = [c(0) + .2, c(0) + 1.6, c(0) + 3.2, c(1) + .2, c(2) + .1, c(2) + 1.0, c(2) + 2.0, c(2) + 2.9, c(2) + 3.8, c(2) + 4.6];
+    at.forEach((a, i) => {
+      appear(root.querySelector(`#n-${i}`), t, a, { dy: 20 });
+      const l = root.querySelector(`#l-${i - 1}`);
+      if (l) l.style.opacity = String(prog(t, a - .2, .4));
+    });
+    appear(root.querySelector("#np"), t, c(3), { dy: 14 });
+    [0, 1, 2, 3].forEach((i) => appear(root.querySelector(`#pr-${i}`), t, c(4) + i * .55, { dy: 14 }));
+  },
+};
+
+SCENES["s08-result"] = {
+  build() {
+    const steps = [["FileStack", "Documents", "posters · notices · sheets · photos"], ["Link2", "Structured evidence", "every value cites its source"], ["ListChecks", "Validated information", "conflicts and gaps resolved by people"], ["ShieldCheck", "Approved report", "signed off by faculty"]];
+    const w = 360, g = 70, x0 = (W - (4 * w + 3 * g)) / 2;
+    let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}`;
+    steps.forEach(([ic, t, s], i) => {
+      const x = x0 + i * (w + g);
+      html += `<div class="abs card" id="r-${i}" style="left:${x}px;top:360px;width:${w}px;height:250px;padding:30px">${icon(ic, 42, i === 3 ? "#6ee7b7" : "#a5b4fc")}<div style="margin-top:22px;font-size:30px;font-weight:650">${t}</div><div style="margin-top:12px;font-size:20px;color:var(--fg2)">${s}</div></div>`;
+      if (i < 3) html += `<div class="abs arrow" id="ra-${i}" style="left:${x + w + 10}px;top:462px;width:${g - 20}px;text-align:center;font-size:34px">→</div>`;
+    });
+    html += `<div class="abs" id="goal" style="left:0;right:0;top:700px;text-align:center"><div class="sub" style="font-size:30px">Less repetitive documentation work. <span style="color:#fff;font-weight:600">The institution keeps control.</span></div></div>`;
+    return $(`<div class="layer">${html}</div>`);
+  },
+  update(f) {
+    const d = Math.max(.6, (cueOf(f, 1) - cueOf(f, 0)) / 4.4);
+    [0, 1, 2, 3].forEach((i) => { appear(root.querySelector(`#r-${i}`), f.t, cueOf(f, 0) + i * d, { dy: 24 }); if (i < 3) appear(root.querySelector(`#ra-${i}`), f.t, cueOf(f, 0) + i * d + .3, { dy: 0 }); });
+    appear(root.querySelector("#goal"), f.t, cueOf(f, 1) + .2);
+  },
+};
+
+SCENES["s09-future"] = {
+  build() {
+    const node = (id, x, y, w, ic, title, sub, kind = "future") => {
+      const st = kind === "future" ? "border:2px dashed rgba(251,191,36,.65);background:rgba(251,191,36,.05)" : "border:2px solid rgba(52,211,153,.6);background:rgba(52,211,153,.08)";
+      const tag = kind === "future" ? `<span style="font-size:13px;font-weight:700;letter-spacing:.1em;color:#fcd34d">PLANNED</span>` : `<span style="font-size:13px;font-weight:700;letter-spacing:.1em;color:#6ee7b7">HUMAN · EXISTS TODAY</span>`;
+      return `<div class="abs" id="${id}" style="left:${x}px;top:${y}px;width:${w}px;padding:16px 20px;border-radius:16px;${st}"><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:10px;align-items:center">${icon(ic, 26, kind === "future" ? "#fcd34d" : "#6ee7b7")}<span style="font-size:23px;font-weight:650">${title}</span></div>${tag}</div><div style="margin-top:8px;font-size:18px;color:var(--fg2)">${sub}</div></div>`;
+    };
+    const cx = W / 2, aw = 420;
+    let html = `<div class="layer" style="background:radial-gradient(1000px 600px at 50% 0%, rgba(251,191,36,.08), transparent 70%), var(--bg)"></div><div class="layer grid-bg"></div>${chipHtml("FUTURE ROADMAP")}
+      <svg class="lines" id="svg"></svg>
+      <div class="abs card" id="today" style="left:80px;top:150px;width:420px;padding:18px 22px;border-color:rgba(129,140,248,.55)"><div style="font-size:15px;font-weight:700;letter-spacing:.12em;color:#a5b4fc">BUILT TODAY</div><div style="margin-top:6px;font-size:22px;font-weight:600">Evidence-grounded workflow</div><div style="margin-top:4px;font-size:17px;color:var(--fg2)">the product shown in this video</div></div>`;
+    html += node("o", cx - 230, 140, 460, "Network", "Orchestrator", "coordinates the agents");
+    html += node("a1", cx - aw * 1.5 - 40, 330, aw, "FolderSearch", "Document agent", "finds and organises relevant documents");
+    html += node("a2", cx - aw / 2, 330, aw, "ListChecks", "Validation agent", "checks extracted data against evidence and rules");
+    html += node("a3", cx + aw / 2 + 40, 330, aw, "GitCompareArrows", "Reconciliation agent", "prepares conflicts for a person to resolve");
+    html += node("a4", cx - 230, 520, 460, "FileText", "Report agent", "prepares reports from approved evidence");
+    html += node("a5", cx - 230, 690, 460, "BellRing", "Follow-up agent", "identifies missing documentation");
+    html += node("fa", cx - 230, 860, 460, "UserCheck", "Faculty approval", "a person signs off — always", "human");
+    html += `<div class="abs" id="note" style="left:80px;top:930px;width:520px;font-size:21px;color:#fde68a;line-height:1.4">To be built after validating the current workflow with real users.</div>`;
+    const el = $(`<div class="layer">${html}</div>`);
+    const L = (id, x1, y1, x2, y2) => `<path id="${id}" d="M ${x1} ${y1} C ${x1} ${(y1 + y2) / 2}, ${x2} ${(y1 + y2) / 2}, ${x2} ${y2}" stroke="rgba(251,191,36,.55)" stroke-width="2.5" stroke-dasharray="7 7" fill="none"/>`;
+    const a1x = cx - aw - 40, a3x = cx + aw + 40;
+    el.querySelector("#svg").innerHTML = [L("e1", cx, 236, a1x, 330), L("e2", cx, 236, cx, 330), L("e3", cx, 236, a3x, 330), L("e4", a1x, 432, cx, 520), L("e5", cx, 432, cx, 520), L("e6", a3x, 432, cx, 520), L("e7", cx, 616, cx, 690), L("e8", cx, 786, cx, 860)].join("");
+    return el;
+  },
+  update(f) {
+    const t = f.t, c = (i) => cueOf(f, i);
+    const d1 = Math.max(4, c(2) - c(1)), ag = (i) => c(1) + .1 + (i * d1 * .92) / 5;
+    appear(root.querySelector("#today"), t, c(0));
+    appear(root.querySelector("#o"), t, c(0) + 3.2, { max: .55 });
+    ["a1", "a2", "a3", "a4", "a5"].forEach((id, i) => appear(root.querySelector(`#${id}`), t, ag(i)));
+    const o = root.querySelector("#o"); if (t >= c(2)) { o.style.opacity = String(.55 + .45 * prog(t, c(2), .5)); o.style.boxShadow = `0 0 ${40 * prog(t, c(2))}px rgba(251,191,36,.35)`; }
+    appear(root.querySelector("#fa"), t, c(2) + 1.2);
+    [["e1", ag(0)], ["e2", ag(1)], ["e3", ag(2)], ["e4", ag(3)], ["e5", ag(3)], ["e6", ag(3)], ["e7", ag(4)], ["e8", c(2) + 1.1]].forEach(([id, a]) => (root.querySelector(`#${id}`).style.opacity = String(prog(t, a - .2, .4))));
+    appear(root.querySelector("#note"), t, c(3));
+  },
+};
+
+SCENES["s10-pilot"] = {
+  build() {
+    const steps = ["Faculty", "Use the product", "Complete an activity", "Give feedback", "Identify friction", "Improve the product", "Repeat"];
+    const cx = 1240, cy = 560, R = 330;
+    let html = `<div class="layer" style="background:radial-gradient(900px 600px at 70% 50%, rgba(45,212,191,.10), transparent 70%), var(--bg)"></div><div class="layer grid-bg"></div>${chipHtml("PILOT")}
+      <div class="abs" id="ttl" style="left:80px;top:300px;width:620px"><div class="eyebrow" style="color:#5eead4">Planned pilot</div><div class="h2" style="margin-top:16px">Mechanical Engineering<br/>KDK College of Engineering, Nagpur</div>
+      <div class="sub" style="margin-top:26px" id="why">Goal: learn whether the workflow genuinely saves effort and is useful to faculty.</div></div>
+      <svg class="lines"><circle id="ring" cx="${cx}" cy="${cy}" r="${R}" stroke="rgba(45,212,191,.35)" stroke-width="3" fill="none" stroke-dasharray="10 10"/></svg>`;
+    steps.forEach((s, i) => {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / steps.length, x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+      html += `<div class="abs" id="p-${i}" style="left:${x - 130}px;top:${y - 34}px;width:260px;height:68px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:21px;font-weight:600;background:#12253a;border:1.5px solid rgba(45,212,191,.55)"><span style="color:#5eead4;font-size:16px">${i + 1}</span>${s}</div>`;
+    });
+    html += `<div class="abs center" id="mid" style="left:${cx - 150}px;top:${cy - 60}px;width:300px;height:120px;flex-direction:column;text-align:center">${icon("RefreshCw", 46, "#5eead4")}<div style="margin-top:10px;font-size:20px;color:var(--fg2)">learn → improve → repeat</div></div>`;
+    return $(`<div class="layer">${html}</div>`);
+  },
+  update(f) {
+    appear(root.querySelector("#ttl"), f.t, cueOf(f, 0));
+    const ring = root.querySelector("#ring"); ring.style.opacity = String(prog(f.t, cueOf(f, 0) + .5));
+    const d = Math.max(.45, (cueOf(f, 2) - cueOf(f, 1)) / 7.5);
+    for (let i = 0; i < 7; i++) appear(root.querySelector(`#p-${i}`), f.t, cueOf(f, 1) - .3 + i * d, { dy: 0, scale: .1 });
+    appear(root.querySelector("#mid"), f.t, cueOf(f, 1) + 7 * d);
+    appear(root.querySelector("#why"), f.t, cueOf(f, 2));
+  },
+};
+
+SCENES["s12-closing"] = {
+  build() {
+    const rows = [["CURRENT PRODUCT", "current", "Current", "Evidence-grounded workflow"], ["FUTURE ROADMAP", "future", "Next", "Agentic college operations (roadmap)"], ["PILOT", "pilot", "Pilot", "Learn → Improve → Scale"]];
+    let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>
+      <div class="abs" id="name" style="left:0;right:0;top:200px;text-align:center"><div style="margin:0 auto;width:84px;height:84px;border-radius:20px;background:linear-gradient(135deg,#6366f1,#4338ca);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;box-shadow:0 12px 40px rgba(99,102,241,.45)">CO</div>
+      <div class="h1" style="margin-top:30px">College Operations Copilot</div>
+      <div class="sub" style="margin-top:18px;font-size:30px">From scattered evidence to validated institutional documentation.</div></div>`;
+    rows.forEach(([_, cls, a, b], i) => {
+      html += `<div class="abs" id="row-${i}" style="left:560px;width:800px;top:${600 + i * 92}px;display:flex;align-items:center;gap:22px"><span class="chip ${cls}" style="position:static;width:170px;justify-content:center">${a}</span><span style="font-size:28px;font-weight:600">${b}</span></div>`;
+    });
+    return $(`<div class="layer">${html}</div>`);
+  },
+  update(f) {
+    appear(root.querySelector("#name"), f.t, cueOf(f, 0) - .2, { dy: 20 });
+    [0, 1, 2].forEach((i) => appear(root.querySelector(`#row-${i}`), f.t, cueOf(f, 1) + i * 1.4, { dy: 14 }));
+  },
+};
+
+/* pilot-metrics card (graphic, used inside the feedback scene) */
+SCENES["metrics"] = {
+  build(f) {
+    return $(`<div class="layer"><div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}
+      <div class="abs" id="ttl" style="left:80px;top:150px"><div class="h2">Administrator view · Pilot page</div><div class="sub" style="margin-top:12px">Counted from the database when the page is opened. Test accounts are excluded.</div></div>
+      <div class="abs" id="img" style="left:${(W - Math.min(1760, f.assets.metricsW)) / 2}px;top:400px;width:${Math.min(1760, f.assets.metricsW)}px;border-radius:16px;overflow:hidden;border:1.5px solid rgba(255,255,255,.18);box-shadow:0 30px 90px rgba(0,0,0,.5);background:#f6f7fb;padding:18px">
+        <img src="${f.assets.metrics}" style="width:100%;display:block"/></div></div>`);
+  },
+  update(f) {
+    appear(root.querySelector("#ttl"), f.t, 0);
+    appear(root.querySelector("#img"), f.t, .3, { dy: 30 });
+  },
+};
+
+/* ------------------------------------------------------------- footage */
+let footEls = null;
+function renderFootage(f) {
+  if (!footEls) {
+    root.innerHTML = "";
+    const el = $(`<div class="layer"><div id="foot"><img id="fimg"/></div><div class="layer" id="ov"></div></div>`);
+    root.appendChild(el);
+    footEls = { img: el.querySelector("#fimg"), ov: el.querySelector("#ov") };
+  }
+  const v = f.view, s = W / v.w;
+  footEls.img.style.transform = `scale(${s}) translate(${-v.x}px, ${-v.y}px)`;
+  let ov = "";
+  if (f.dim) ov += `<div class="dim" style="background:rgba(15,17,35,${f.dim})"></div>`;
+  for (const c of f.callouts || []) {
+    if (c.alpha <= 0) continue;
+    const x = (c.x - v.x) * s, y = (c.y - v.y) * s, w = c.w * s, h = c.h * s, pad = 8;
+    if (w > 0) ov += `<div class="callout ${c.tone || ""}" style="left:${x - pad}px;top:${y - pad}px;width:${w + 2 * pad}px;height:${h + 2 * pad}px;opacity:${c.alpha}"></div>`;
+    if (c.label) {
+      const above = y - pad - 58 > 70;
+      const lx = clamp(x - pad, 20, W - 640), ly = above ? y - pad - 54 : y + h + pad + 12;
+      ov += `<div class="clabel ${c.tone || ""}" style="left:${lx}px;top:${ly}px;opacity:${c.alpha}">${c.label}</div>`;
+    }
+  }
+  if (f.lower) ov += f.lower;
+  footEls.ov.innerHTML = ov;
+}
+
+function overlays(f) {
+  let h = "";
+  if (f.badges && f.badges.length) h += `<div class="badges">${f.badges.map((b) => `<span class="badge ${b.amber ? "amber" : ""}">${b.live ? '<span class="live"></span>' : ""}${b.text}</span>`).join("")}</div>`;
+  if (f.caption) h += `<div class="caption">${f.caption}</div>`;
+  return h;
+}
+
+window.render = async (f) => {
+  const stage = document.getElementById("stage");
+  const key = f.kind === "footage" ? "footage" : f.scene + "|" + (f.variant || "");
+  if (built !== key) {
+    stage.innerHTML = "";
+    root = $(`<div class="layer"></div>`);
+    stage.appendChild(root);
+    const ovl = $(`<div class="layer" id="global"></div>`);
+    stage.appendChild(ovl);
+    footEls = null;
+    if (f.kind !== "footage") root.appendChild(SCENES[f.scene].build(f));
+    built = key;
+  }
+  if (f.kind === "footage") {
+    const img = (footEls && footEls.img) || null;
+    renderFootage(f);
+    if (footEls.img.getAttribute("src") !== f.src) { footEls.img.src = f.src; await footEls.img.decode().catch(() => {}); }
+  } else {
+    SCENES[f.scene].update(f);
+    await Promise.all([...root.querySelectorAll("img")].map((i) => (i.complete ? null : i.decode().catch(() => {}))));
+  }
+  document.getElementById("global").innerHTML = overlays(f);
+  return true;
+};
+window.ready = document.fonts.ready.then(() => true);
+</script>
+</body>
+</html>

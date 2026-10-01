@@ -43,7 +43,7 @@ export const SCENES: Scene[] = [
     shots: ["Poster card", "Notice card", "Handwritten attendance sheet card", "Photo card", "Activity report card", "Approval stamp card", "Issue labels: scattered · conflicting · handwritten · copied by hand"],
     lines: [
       { text: "We started with a simple problem." },
-      { text: "College activities generate information across multiple documents: a poster, a notice, an attendance sheet, photographs, and finally an activity report that has to be approved." },
+      { text: "College activities generate information across multiple documents: a poster, a notice, an attendance sheet, photographs, and a report that has to be approved." },
       { text: "The information is scattered. Dates and details do not always match. Attendance is often handwritten." },
       { text: "And someone has to copy it all by hand, check it, and do it again for the next activity.", pause: 0.6 },
     ],
@@ -69,8 +69,7 @@ export const SCENES: Scene[] = [
     shots: ["Title: COLLEGE OPERATIONS COPILOT", "Subtitle: Evidence-grounded automation for institutional operations", "Real dashboard screenshot"],
     lines: [
       { text: "This is College Operations Copilot." },
-      { text: "It automates the repetitive documentation workflow, while keeping evidence, validation and human approval at the centre." },
-      { text: "That is why we designed the system around evidence and human verification.", pause: 0.5 },
+      { text: "It automates the repetitive documentation workflow, and we designed it around evidence and human verification.", pause: 0.5 },
     ],
   },
   {
@@ -84,7 +83,7 @@ export const SCENES: Scene[] = [
     lines: [
       say("Here is the current system. Faculty upload the evidence, and the text is read in the browser: from the PDF where possible, with OCR for scans.", "Here is the current system. Faculty upload the evidence, and the text is read in the browser: from the P D F where possible, with O C R for scans."),
       { text: "Rules extract each field, and every value keeps its source: the document, the page and the exact text." },
-      { text: "Validation checks for gaps, low confidence and conflicts. A person reviews, and a faculty member approves before export." },
+      { text: "Validation checks for gaps, low confidence and conflicts. A person reviews, and only a faculty member can approve the final record." },
       { text: "Missing information is marked as not provided. It is never filled in." },
       { text: "AI assists. Evidence supports. Validation checks. Humans approve.", pause: 0.6 },
     ],
@@ -98,7 +97,7 @@ export const SCENES: Scene[] = [
     shots: ["Login (demo faculty account)", "Dashboard (real counts)", "Create activity (blank)", "Upload notice, scanned report, poster, attendance sheet, photo — stage progress", "Overview: trust summary", "Review: value with source badge, rule and confidence", "Preview source drawer"],
     evidence: "Recorded live against production; same flow as scripts/prod-smoke.mts (24/24 passed on the deployed commit).",
     lines: [
-      { text: "Let me show you the deployed product, using synthetic demonstration documents." },
+      { text: "Let me show you the deployed product, with synthetic documents." },
       { text: "I sign in as a demo faculty member. The dashboard only shows counts taken from the database." },
       { text: "I create an activity, and upload the evidence: a notice, a scanned report, a poster, the attendance sheet and a photograph." },
       say("Each stage is shown as it happens: uploading, reading, OCR, extracting and validating. Photographs are stored as evidence only.", "Each stage is shown as it happens: uploading, reading, O C R, extracting and validating. Photographs are stored as evidence only."),
@@ -115,7 +114,7 @@ export const SCENES: Scene[] = [
     evidence: "src/lib/fields/resolve.ts (typed conflicts, never auto-resolved); readiness blocks approval on conflict; chooseCandidate writes field.conflict_resolved to the audit log.",
     lines: [
       { text: "This is the most important part." },
-      { text: "The poster says the thirty-first of October. The notice, the report and the attendance sheet say the sixth of November." },
+      { text: "The poster says the thirty-first of October. The other three documents say the sixth of November." },
       { text: "When documents disagree, the system does not silently choose an answer. Instead, it surfaces the conflict for review, with every candidate and its source, and approval stays blocked until a person decides." },
       { text: "Here I choose the date from the activity report, and that decision is recorded.", pause: 0.5 },
     ],
@@ -141,9 +140,9 @@ export const SCENES: Scene[] = [
     target: 26,
     visual: "Reports tab: generate, preview the Activity Report; Approve tab: readiness checklist, Approve; downloads; audit timeline.",
     shots: ["Generate reports", "Report preview with document details", "Approval checklist → Approve", "Exports (DOCX, PDF, packet)", "Audit timeline"],
-    evidence: "src/lib/reports/build.ts; DRAFT footer in src/lib/exports; approveActivity requires no blocking issues and records approver + time.",
+    evidence: "src/lib/reports/build.ts; DRAFT footer in src/lib/server/exports.ts; approveActivity requires no blocking issues and records approver + time.",
     lines: [
-      { text: "With the conflict resolved and attendance verified, I generate the reports. They are built only from the reviewed fields, using the department's template." },
+      { text: "Next, I generate the reports. They are built only from the reviewed fields, using the department's template." },
       { text: "Approval is a human action. The system checks that nothing is blocking, records who approved and when, and locks the record." },
       { text: "Then I can export Word and PDF files, a compiled packet and the evidence package. Every step is in the audit trail.", pause: 0.5 },
     ],
@@ -168,9 +167,8 @@ export const SCENES: Scene[] = [
     visual: "Persistent “FUTURE ROADMAP — not built yet” label. Agent diagram builds top-down: Orchestrator → Document / Validation / Reconciliation agents → Report agent → Follow-up agent → Faculty approval.",
     shots: ["FUTURE ROADMAP label", "Orchestrator", "Document agent", "Validation agent", "Reconciliation agent", "Report agent", "Follow-up agent", "Faculty approval (human)"],
     lines: [
-      { text: "The current product focuses on this evidence-grounded workflow." },
-      { text: "The next phase, and this is a roadmap, not something that exists today, is to introduce specialised agents that coordinate these workflows." },
-      { text: "A document agent to organise the evidence. A validation agent to check it against rules. A reconciliation agent to prepare conflicts for a person. A report agent to draft from approved evidence. And a follow-up agent to spot missing documentation." },
+      { text: "The current product focuses on this evidence-grounded workflow. The next phase, and this is a roadmap, not something that exists today, is specialised agents that coordinate these workflows." },
+      { text: "A document agent organises the evidence. A validation agent checks it against rules. A reconciliation agent prepares conflicts for a person. A report agent drafts from approved evidence. And a follow-up agent spots missing documentation." },
       { text: "An orchestrator would coordinate them, and faculty approval stays at the end." },
       { text: "These are the next capabilities we intend to build, after validating the current workflow with real users.", pause: 0.6 },
     ],
@@ -198,7 +196,7 @@ export const SCENES: Scene[] = [
     evidence: "db/migrations/002_feedback.sql; src/lib/server/feedback.ts; /pilot page (administrators).",
     lines: [
       { text: "To make that feedback systematic, the product asks for it." },
-      { text: "After an activity is approved, the faculty member rates the experience from one to five, says what worked and what was difficult, whether the report needed corrections, how much manual work was left, and whether they would use it again." },
+      { text: "After approval, faculty rate the experience, say what worked and what was difficult, whether the report needed corrections, how much manual work remained, and whether they would use it again." },
       { text: "Administrators see these answers next to counts taken from the system itself.", pause: 0.5 },
     ],
   },
@@ -225,5 +223,5 @@ export const SHORT: { scene: string; lines: Line[] }[] = [
   { scene: "s07-attendance", lines: [{ text: "Handwritten attendance stays a draft until someone verifies it." }] },
   { scene: "s05b-demo", lines: [{ text: "Reports are built from reviewed fields, and only a faculty member can approve." }] },
   { scene: "s09-future", lines: [{ text: "Next, after a pilot with real faculty: specialised agents, on the same evidence-first rules.", pause: 0.4 }] },
-  { scene: "s12-closing", lines: [{ text: "College Operations Copilot.", pause: 1 }] },
+  { scene: "s12-closing", lines: [{ text: "College Operations Copilot.", pause: 3.2 }] },
 ];

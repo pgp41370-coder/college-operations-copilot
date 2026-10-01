@@ -17,7 +17,7 @@ let n = `# Product video — narration
 
 Generated from \`scripts/video/script.ts\`. Edit that file, then run \`npx tsx scripts/video/docs.mts\`.
 
-- **Voice:** macOS Indian English voice (default \`Aman\`, alternative \`Tara\`), rate 185. Set \`VIDEO_VOICE\` / \`VIDEO_RATE\` to change.
+- **Voice:** macOS Indian English voice (default \`Aman\`, alternative \`Tara\`), rate 190. Set \`VIDEO_VOICE\` / \`VIDEO_RATE\` to change.
 - **Labels:** each scene is marked CONTEXT, CURRENT PRODUCT, FUTURE ROADMAP or PILOT. Only CURRENT PRODUCT scenes describe what the deployed app does today.
 - **Order:** the live demo is split around the conflict and attendance scenes (5A → 6 → 7 → 5B) so the recording follows the real workflow order.
 

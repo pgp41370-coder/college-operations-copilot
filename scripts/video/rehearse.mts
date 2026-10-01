@@ -38,7 +38,7 @@ try {
   }
   execFileSync("npx", ["tsx", "scripts/video/record-product.mts", `--base-url=http://localhost:${PORT}`], {
     stdio: "inherit",
-    env: { ...ENV, VIDEO_ADMIN_EMAIL: email, VIDEO_ADMIN_PASSWORD: password },
+    env: { ...ENV, VIDEO_ADMIN_EMAIL: email, VIDEO_ADMIN_PASSWORD: password, VIDEO_RAW_DIR: ".cache/video/rehearsal-raw" },
   });
 } finally {
   server.kill();

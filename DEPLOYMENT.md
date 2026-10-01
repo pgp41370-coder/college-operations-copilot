@@ -28,6 +28,7 @@ The Neon integration provisioned these for Production, Preview and Development. 
 
 - `npm run vercel-build` runs `scripts/migrate.ts --if-configured` before `next build`, so every deployment applies any pending migration (idempotent).
 - Migration `001_init.sql` was applied to production on 30 Sep 2026, and the built-in template was seeded.
+- Migration `002_feedback.sql` (pilot feedback table) was applied by the production build on 1 Oct 2026; `/api/health/db` then reported `latestApplied: 002_feedback.sql`, 14/14 tables.
 - The production schema was compared object by object with a freshly migrated reference database. Tables, columns, indexes and constraints are identical:
   - 13 app tables plus `schema_migrations`, 125 columns
   - 28 indexes
@@ -40,7 +41,7 @@ The Neon integration provisioned these for Production, Preview and Development. 
 | Endpoint | Expected in production |
 |---|---|
 | `/api/health` | `{"ok":true,"database":"connected","migrated":true,"migrations":"current",...}` |
-| `/api/health/db` | `ok: true`, `migrations: current`, `tablesPresent: 13/13`, `missingTables: []`, `templatesSeeded ≥ 1` |
+| `/api/health/db` | `ok: true`, `migrations: current`, `tablesPresent: 14/14`, `missingTables: []`, `templatesSeeded ≥ 1` |
 
 Neither endpoint returns connection strings, hostnames or data.
 
@@ -67,7 +68,7 @@ The account owner ran `npx tsx scripts/prod-smoke.mts` against https://college-o
 
 | Area | Verified in production |
 |---|---|
-| Health | `/api/health` and `/api/health/db`: database connected, migrations current, 13/13 tables |
+| Health | `/api/health` and `/api/health/db`: database connected, migrations current, 14/14 tables |
 | Authentication | Signed-out redirect to `/login`; wrong password rejected; admin login; logout closes protected routes again |
 | Authorisation | A second faculty account got a 404 on the admin's activity page and on its export API |
 | Upload | Digital PDF, scanned PDF, PNG and JPG accepted and stored |

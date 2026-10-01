@@ -2,7 +2,7 @@
 
 Generated from `scripts/video/script.ts`. Edit that file, then run `npx tsx scripts/video/docs.mts`.
 
-- **Voice:** macOS Indian English voice (default `Aman`, alternative `Tara`), rate 185. Set `VIDEO_VOICE` / `VIDEO_RATE` to change.
+- **Voice:** macOS Indian English voice (default `Aman`, alternative `Tara`), rate 190. Set `VIDEO_VOICE` / `VIDEO_RATE` to change.
 - **Labels:** each scene is marked CONTEXT, CURRENT PRODUCT, FUTURE ROADMAP or PILOT. Only CURRENT PRODUCT scenes describe what the deployed app does today.
 - **Order:** the live demo is split around the conflict and attendance scenes (5A → 6 → 7 → 5B) so the recording follows the real workflow order.
 
@@ -10,7 +10,7 @@ Generated from `scripts/video/script.ts`. Edit that file, then run `npx tsx scri
 
 > We started with a simple problem.
 >
-> College activities generate information across multiple documents: a poster, a notice, an attendance sheet, photographs, and finally an activity report that has to be approved.
+> College activities generate information across multiple documents: a poster, a notice, an attendance sheet, photographs, and a report that has to be approved.
 >
 > The information is scattered. Dates and details do not always match. Attendance is often handwritten.
 >
@@ -26,9 +26,7 @@ Generated from `scripts/video/script.ts`. Edit that file, then run `npx tsx scri
 
 > This is College Operations Copilot.
 >
-> It automates the repetitive documentation workflow, while keeping evidence, validation and human approval at the centre.
->
-> That is why we designed the system around evidence and human verification.
+> It automates the repetitive documentation workflow, and we designed it around evidence and human verification.
 
 ## Current architecture · `CURRENT PRODUCT`
 
@@ -36,7 +34,7 @@ Generated from `scripts/video/script.ts`. Edit that file, then run `npx tsx scri
 >
 > Rules extract each field, and every value keeps its source: the document, the page and the exact text.
 >
-> Validation checks for gaps, low confidence and conflicts. A person reviews, and a faculty member approves before export.
+> Validation checks for gaps, low confidence and conflicts. A person reviews, and only a faculty member can approve the final record.
 >
 > Missing information is marked as not provided. It is never filled in.
 >
@@ -46,7 +44,7 @@ Verified against: src/lib/extraction/browser.ts (pdf.js text layer, Tesseract OC
 
 ## Live demo — sign in, create, upload, provenance · `CURRENT PRODUCT`
 
-> Let me show you the deployed product, using synthetic demonstration documents.
+> Let me show you the deployed product, with synthetic documents.
 >
 > I sign in as a demo faculty member. The dashboard only shows counts taken from the database.
 >
@@ -62,7 +60,7 @@ Verified against: Recorded live against production; same flow as scripts/prod-sm
 
 > This is the most important part.
 >
-> The poster says the thirty-first of October. The notice, the report and the attendance sheet say the sixth of November.
+> The poster says the thirty-first of October. The other three documents say the sixth of November.
 >
 > When documents disagree, the system does not silently choose an answer. Instead, it surfaces the conflict for review, with every candidate and its source, and approval stays blocked until a person decides.
 >
@@ -82,13 +80,13 @@ Verified against: src/lib/extraction/attendance.ts (rows saved unverified); src/
 
 ## Live demo — reports, approval, export · `CURRENT PRODUCT`
 
-> With the conflict resolved and attendance verified, I generate the reports. They are built only from the reviewed fields, using the department's template.
+> Next, I generate the reports. They are built only from the reviewed fields, using the department's template.
 >
 > Approval is a human action. The system checks that nothing is blocking, records who approved and when, and locks the record.
 >
 > Then I can export Word and PDF files, a compiled packet and the evidence package. Every step is in the audit trail.
 
-Verified against: src/lib/reports/build.ts; DRAFT footer in src/lib/exports; approveActivity requires no blocking issues and records approver + time.
+Verified against: src/lib/reports/build.ts; DRAFT footer in src/lib/server/exports.ts; approveActivity requires no blocking issues and records approver + time.
 
 ## The result · `CURRENT PRODUCT`
 
@@ -98,11 +96,9 @@ Verified against: src/lib/reports/build.ts; DRAFT footer in src/lib/exports; app
 
 ## Future agentic system · `FUTURE ROADMAP`
 
-> The current product focuses on this evidence-grounded workflow.
+> The current product focuses on this evidence-grounded workflow. The next phase, and this is a roadmap, not something that exists today, is specialised agents that coordinate these workflows.
 >
-> The next phase, and this is a roadmap, not something that exists today, is to introduce specialised agents that coordinate these workflows.
->
-> A document agent to organise the evidence. A validation agent to check it against rules. A reconciliation agent to prepare conflicts for a person. A report agent to draft from approved evidence. And a follow-up agent to spot missing documentation.
+> A document agent organises the evidence. A validation agent checks it against rules. A reconciliation agent prepares conflicts for a person. A report agent drafts from approved evidence. And a follow-up agent spots missing documentation.
 >
 > An orchestrator would coordinate them, and faculty approval stays at the end.
 >
@@ -120,7 +116,7 @@ Verified against: src/lib/reports/build.ts; DRAFT footer in src/lib/exports; app
 
 > To make that feedback systematic, the product asks for it.
 >
-> After an activity is approved, the faculty member rates the experience from one to five, says what worked and what was difficult, whether the report needed corrections, how much manual work was left, and whether they would use it again.
+> After approval, faculty rate the experience, say what worked and what was difficult, whether the report needed corrections, how much manual work remained, and whether they would use it again.
 >
 > Administrators see these answers next to counts taken from the system itself.
 
@@ -151,4 +147,4 @@ Verified against: db/migrations/002_feedback.sql; src/lib/server/feedback.ts; /p
 > College Operations Copilot.
 
 
-Word count: full 774, short 81.
+Word count: full 734, short 81.

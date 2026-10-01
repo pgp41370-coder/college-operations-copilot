@@ -23,12 +23,13 @@ import { hiddenPrompt, prompt } from "../lib/prompt";
 const BASE = (process.argv.find((a) => a.startsWith("--base-url="))?.split("=")[1] ?? "https://college-operations-copilot.vercel.app").replace(/\/$/, "");
 const ROOT = process.cwd();
 const IN = path.join(ROOT, "demo", "input");
-const RAW = path.join(ROOT, ".cache", "video", "raw");
+const RAW = path.resolve(process.env.VIDEO_RAW_DIR ?? path.join(ROOT, ".cache", "video", "raw"));
 const FRAMES = path.join(RAW, "frames");
 const W = 1920;
 const H = 1080;
 
 const CURSOR_JS = String.raw`(() => {
+  if (window.top !== window) return; // one cursor, drawn in the top page only
   const w = window;
   const install = () => {
     if (!document.body || document.getElementById("__v_cursor")) return;
@@ -75,7 +76,7 @@ const now = () => Date.now() / 1000;
 const hold = (ms: number) => page.waitForTimeout(ms);
 
 async function boxOf(loc: Locator): Promise<Box | null> {
-  const b = await loc.boundingBox().catch(() => null);
+  const b = await loc.boundingBox({ timeout: 2000 }).catch(() => null);
   return b ? { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) } : null;
 }
 /** Records a named moment and the on-screen position of elements for callouts. */
@@ -154,7 +155,8 @@ async function main() {
   let demoUserId: string | null = null;
   let activityUrl = "";
   try {
-    browser = await chromium.launch();
+    // The new headless mode includes Chrome's PDF viewer, so source previews render.
+    browser = await chromium.launch({ channel: "chromium" });
     // ---- off camera: admin creates the temporary demo account
     admin = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const ap = await admin.newPage();
@@ -185,6 +187,7 @@ async function main() {
     await type(page.getByLabel("Password"), demoPassword, 30);
     await click(page.getByRole("button", { name: "Sign in" }), 0);
     await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
+    await mark("login-submitted");
     await hold(1500);
     await mark("dashboard", { kpis: page.locator("main .grid").first(), env: page.getByText("Production", { exact: true }) });
     await hold(2500);
@@ -297,7 +300,10 @@ async function main() {
     await click(page.getByRole("tab", { name: "Approve" }), 1500);
     await mark("approve", { checklist: page.getByText("Approval readiness").locator("xpath=ancestor::div[contains(@class,'card')][1]"), button: page.getByRole("button", { name: "Approve", exact: true }) });
     await hold(2500);
-    await click(page.getByRole("button", { name: "Approve", exact: true }), 0);
+    await moveTo(page.getByRole("button", { name: "Approve", exact: true }));
+    await hold(300);
+    await mark("approve-click");
+    await page.getByRole("button", { name: "Approve", exact: true }).click();
     await page.getByText("This activity is approved and read-only.").waitFor({ timeout: 30_000 });
     await hold(800);
     await mark("approved", { header: page.getByText(/Approved by Demo Faculty/).first() });
@@ -360,8 +366,9 @@ async function main() {
     await browser?.close();
     writeFileSync(path.join(RAW, "frames.json"), JSON.stringify(frames));
     writeFileSync(path.join(RAW, "markers.json"), JSON.stringify(markers, null, 1));
+    writeFileSync(path.join(RAW, "meta.json"), JSON.stringify({ base: BASE, recordedAt: new Date().toISOString(), viewport: [W, H] }));
   }
-  console.log(`\nRecorded ${frames.length} frames, ${markers.length} markers → .cache/video/raw/`);
+  console.log(`\nRecorded ${frames.length} frames, ${markers.length} markers → ${path.relative(ROOT, RAW)}/`);
 }
 
 main().catch((e) => {
