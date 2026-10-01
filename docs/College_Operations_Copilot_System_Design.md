@@ -20,11 +20,11 @@
 | Reports / exports | `reports/build.ts`, `exports/docx.ts`, `exports/pdf.ts`, `server/exports.ts` | Report content; DOCX, PDF, CSV, JSON manifest |
 | Templates | `templates/schema.ts`, `kdk-mech-v1.ts`, `seed.ts`, `server/templates.ts` | zod-validated, versioned JSON templates |
 | AI adapter | `ai/provider.ts`, `server/ai-extraction.ts` | <span class="status opt">OPTIONAL</span> `AIProvider` interface; deterministic default; OpenAI-compatible grounded extraction |
-| Data | `db/migrations/001_init.sql`, `scripts/migrate.ts` | PostgreSQL schema; migration runner that also seeds the templates |
+| Data | `db/migrations/*.sql` (001 schema, 002 pilot feedback), `scripts/migrate.ts` | PostgreSQL schema; migration runner that also seeds the templates |
 
 ## 2. Database entities
 
-![Entity relationships (13 tables, db/migrations/001_init.sql)](architecture/er-model.mmd){h110 legend=impl}
+![Entity relationships (14 tables, db/migrations/001_init.sql and 002_feedback.sql)](architecture/er-model.mmd){h110 legend=impl}
 
 | Table | Key columns | Purpose |
 |---|---|---|

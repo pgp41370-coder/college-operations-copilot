@@ -3,6 +3,7 @@ import type { Db } from "./types";
 /** Tables created by db/migrations (kept in sync by tests/unit/schema-status.test.ts). */
 export const EXPECTED_TABLES = [
   "activities",
+  "activity_feedback",
   "activity_fields",
   "attendance_records",
   "audit_logs",
@@ -18,7 +19,7 @@ export const EXPECTED_TABLES = [
 ] as const;
 
 /** Latest migration file in db/migrations. */
-export const LATEST_MIGRATION = "001_init.sql";
+export const LATEST_MIGRATION = "002_feedback.sql";
 
 export interface SchemaStatus {
   migrations: "current" | "pending" | "missing";

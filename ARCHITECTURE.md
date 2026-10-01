@@ -16,7 +16,7 @@
 
 | Layer | Location | Notes |
 |---|---|---|
-| Schema | `db/migrations/001_init.sql` | users, sessions, rate_limit_events, templates, activities, sources, source_blobs, source_extractions, field_candidates, activity_fields, attendance_records, generated_reports, audit_logs |
+| Schema | `db/migrations/001_init.sql`, `002_feedback.sql` | users, sessions, rate_limit_events, templates, activities, sources, source_blobs, source_extractions, field_candidates, activity_fields, attendance_records, generated_reports, audit_logs, activity_feedback (pilot feedback) |
 | Template | `src/lib/templates/` | zod-validated definition. The built-in KDK template is `kdk-mech-v1.ts`, seeded by the migration script. Edits create new versions. |
 | Browser extraction | `src/lib/extraction/browser.ts` | pdf.js text layer (lines rebuilt from item coordinates). OCR fallback with tesseract.js (English, PSM 4) on pages with fewer than 200 text characters. |
 | Line rebuilding | `src/lib/extraction/layout.ts` | Groups words into lines by their geometry. Never adds or changes words. |
@@ -30,6 +30,7 @@
 | Service layer | `src/lib/server/activities.ts` etc. | Every function takes the acting user and enforces access. Every write is audited. |
 | API | `src/app/api/**/route.ts` | Thin wrappers: session, same-origin check, zod validation. |
 | UI | `src/app/(app)/**` | Server components read through the service layer; client components call the API. |
+| Pilot feedback | `src/lib/server/feedback.ts`, `src/app/(app)/pilot` | Feedback form after approval (one response per person per activity). Admin-only Pilot page with metrics counted from the database. See `docs/PILOT_FEEDBACK.md`. |
 | AI adapter | `src/lib/ai/provider.ts` | `AIProvider` interface. `DeterministicProvider` is the default. `OpenAICompatibleProvider` is optional. |
 
 ## Parser rules by document kind

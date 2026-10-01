@@ -11,7 +11,7 @@
 
 **Built and verified**
 
-- Next.js + TypeScript + PostgreSQL; 21 API route files, 13 tables
+- Next.js + TypeScript + PostgreSQL; 22 API route files, 14 tables
 - In-browser OCR (tesseract.js) and PDF text extraction
 - Deterministic parser with page, snippet, rule and confidence for every value
 - Conflict detection, missing-data and low-confidence gates

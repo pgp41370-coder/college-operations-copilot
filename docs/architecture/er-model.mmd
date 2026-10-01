@@ -1,4 +1,4 @@
-%% Database entities (db/migrations/001_init.sql) — all IMPLEMENTED.
+%% Database entities (db/migrations/001_init.sql, 002_feedback.sql) — all IMPLEMENTED.
 erDiagram
   users ||--o{ sessions : has
   users ||--o{ activities : owns
@@ -14,3 +14,5 @@ erDiagram
   activities ||--o{ generated_reports : "versions"
   activities |o--o{ audit_logs : "history"
   users |o--o{ audit_logs : actor
+  activities ||--o{ activity_feedback : "pilot feedback"
+  users |o--o{ activity_feedback : "given by"

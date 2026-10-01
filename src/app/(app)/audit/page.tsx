@@ -9,7 +9,7 @@ export const metadata = { title: "Audit log" };
 
 const CATEGORIES: [string, string, string[]][] = [
   ["", "All", []],
-  ["activity", "Activities", ["activity"]],
+  ["activity", "Activities", ["activity", "feedback"]],
   ["documents", "Documents", ["source", "extraction", "ai"]],
   ["fields", "Fields", ["field"]],
   ["attendance", "Attendance", ["attendance", "reconciliation"]],

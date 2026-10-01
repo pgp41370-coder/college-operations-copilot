@@ -159,8 +159,19 @@ test.describe.serial("activity documentation workflow", () => {
     await expect(page.getByText("No blocking issues")).toBeVisible();
     await page.getByRole("button", { name: "Approve", exact: true }).click();
     await expect(page.getByText(/Approved by E2E Faculty A/).first()).toBeVisible();
+
+    // Pilot feedback is asked for once the activity is approved.
+    const fb = page.getByTestId("feedback-card");
+    await expect(fb.getByRole("button", { name: "Submit feedback" })).toBeDisabled();
+    await fb.locator("label", { has: page.getByLabel("4 out of 5") }).click();
+    await fb.getByText("Minor corrections", { exact: true }).click();
+    await fb.getByText("Some", { exact: true }).click();
+    await fb.getByText("Yes", { exact: true }).click();
+    await fb.getByLabel("What worked well?").fill("Source links on every value");
+    await fb.getByRole("button", { name: "Submit feedback" }).click();
+    await expect(fb.getByText(/your feedback was recorded \(4\/5\)/)).toBeVisible();
     await page.getByRole("tab", { name: "Audit" }).click();
-    for (const a of ["Created activity", "Uploaded document", "Extraction complete", "Conflict resolved", "Field edited", "Reports generated", "Activity approved", "Export downloaded"]) {
+    for (const a of ["Created activity", "Uploaded document", "Extraction complete", "Conflict resolved", "Field edited", "Reports generated", "Activity approved", "Export downloaded", "Pilot feedback submitted"]) {
       await expect(page.getByText(a, { exact: true }).first()).toBeVisible();
     }
   });
@@ -169,6 +180,8 @@ test.describe.serial("activity documentation workflow", () => {
     await login(page, users()[1]);
     const res = await page.goto(activityUrl);
     expect(res?.status()).toBe(404);
+    // The pilot page is for administrators only.
+    expect((await page.goto("/pilot"))?.status()).toBe(404);
     const id = activityUrl.split("/").pop();
     const api = await page.request.get(`/api/activities/${id}/export?type=manifest&format=json`);
     expect(api.status()).toBe(404);

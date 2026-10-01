@@ -52,6 +52,7 @@ import { AttendanceTab } from "./attendance-tab";
 import { EvidenceTab } from "./evidence-tab";
 import { ReportsTab } from "./reports-tab";
 import { ReviewTab } from "./review-tab";
+import { FeedbackCard, type MyFeedback } from "./feedback-card";
 import type { Bundle } from "./types";
 
 export interface WorkspaceProps {
@@ -107,7 +108,7 @@ function workflowSteps(b: Bundle): { label: string; state: StepState; hint: stri
   return steps;
 }
 
-export function Workspace({ bundle, initialTab, user, ai }: WorkspaceProps & { initialTab: string }) {
+export function Workspace({ bundle, initialTab, user, ai, feedback }: WorkspaceProps & { initialTab: string; feedback: MyFeedback | null }) {
   const router = useRouter();
   const params = useSearchParams();
   const raw = params.get("tab") ?? initialTab;
@@ -185,7 +186,7 @@ export function Workspace({ bundle, initialTab, user, ai }: WorkspaceProps & { i
         {tab === "review" && <ReviewTab {...props} />}
         {tab === "attendance" && <AttendanceTab {...props} />}
         {tab === "reports" && <ReportsTab {...props} />}
-        {tab === "approval" && <ApprovalTab {...props} setTab={setTab} />}
+        {tab === "approval" && <ApprovalTab {...props} setTab={setTab} feedback={feedback} />}
         {tab === "audit" && <AuditTab bundle={bundle} />}
       </div>
     </>
@@ -216,7 +217,7 @@ export function IssueList({ bundle, setTab }: { bundle: Bundle; setTab?: (t: str
     <ul className="space-y-2">
       {blocking.length === 0 && (
         <li>
-          <Notice tone="success">No blocking issues. The activity can be approved.</Notice>
+          <Notice tone="success">{bundle.activity.status === "APPROVED" || bundle.activity.status === "ARCHIVED" ? "No blocking issues." : "No blocking issues. The activity can be approved."}</Notice>
         </li>
       )}
       {blocking.map((b, i) => row(b.message, b.code, "danger", `b${i}`))}
@@ -365,7 +366,7 @@ function Metric({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 /* ---------------------------------------------------------------- approval */
-function ApprovalTab({ bundle, user, locked, refresh, setTab }: TabProps & { setTab: (t: string) => void }) {
+function ApprovalTab({ bundle, user, locked, refresh, setTab, feedback }: TabProps & { setTab: (t: string) => void; feedback: MyFeedback | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reason, setReason] = useState("");
@@ -396,6 +397,11 @@ function ApprovalTab({ bundle, user, locked, refresh, setTab }: TabProps & { set
 
   return (
     <div className="grid gap-5 lg:grid-cols-5">
+      {locked && a.approved_at && (
+        <div className="lg:col-span-5">
+          <FeedbackCard activityId={a.id} existing={feedback} onSaved={refresh} />
+        </div>
+      )}
       <div className="space-y-5 lg:col-span-3">
         <Card>
           <CardHeader icon={ClipboardCheck} title="Approval readiness" description="Approval is blocked until every check passes." />

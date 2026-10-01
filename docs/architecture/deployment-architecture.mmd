@@ -10,7 +10,7 @@ flowchart TB
   CDN["jsDelivr CDN<br/>OCR engine + English data<br/>(documents never sent)"]:::neutral
   subgraph VER["Vercel — Hobby plan · region iad1 (Washington, D.C.)"]
     direction LR
-    APP["Next.js 16 app<br/>pages + 21 API routes"]:::impl
+    APP["Next.js 16 app<br/>pages + 22 API routes"]:::impl
     SVC["Domain services<br/>parser · resolution · reports<br/>exports · audit"]:::impl
     APP --> SVC
   end

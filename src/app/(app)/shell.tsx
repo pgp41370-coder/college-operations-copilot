@@ -25,6 +25,7 @@ import {
   Settings,
   X,
   type LucideIcon,
+  FlaskConical,
 } from "lucide-react";
 import { api } from "@/components/client-api";
 import {
@@ -43,6 +44,10 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/templates", label: "Templates", icon: BookOpenCheck },
   { href: "/audit", label: "Audit Log", icon: ScrollText },
   { href: "/settings", label: "Settings", icon: Settings },
+];
+/** Administrators only (the page itself also checks the role). */
+const ADMIN_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/pilot", label: "Pilot", icon: FlaskConical },
 ];
 
 interface ShellProps {
@@ -93,9 +98,11 @@ function useSignOut() {
 function NavList({
   collapsed,
   onNavigate,
+  admin,
 }: {
   collapsed?: boolean;
   onNavigate?: () => void;
+  admin?: boolean;
 }) {
   const path = usePathname();
   const active = (href: string) =>
@@ -105,7 +112,7 @@ function NavList({
       : path === href || path.startsWith(`${href}/`);
   return (
     <nav aria-label="Main" className="flex flex-col gap-0.5">
-      {NAV.map((n) => {
+      {(admin ? [...NAV.slice(0, -1), ...ADMIN_NAV, NAV[NAV.length - 1]] : NAV).map((n) => {
         const on = active(n.href);
         const Icon = n.icon;
         return (
@@ -307,7 +314,7 @@ export function AppShell({
         <Plus className="h-4 w-4" aria-hidden />
         {!compact && "Create Activity"}
       </Link>
-      <NavList collapsed={compact} onNavigate={onNavigate} />
+      <NavList collapsed={compact} onNavigate={onNavigate} admin={user.role === "admin"} />
       <div className="mt-auto space-y-2">
         <SystemStatus system={system} collapsed={compact} />
       </div>
