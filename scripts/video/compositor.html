@@ -47,7 +47,8 @@
   .badge { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px; border-radius: 999px; font-size: 17px; font-weight: 600; background: rgba(17,20,42,.88); color: #e0e7ff; border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); }
   .badge .live { width: 9px; height: 9px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgba(52,211,153,.25); }
   .badge.amber { color: #fde68a; }
-  .caption { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); max-width: 1500px; padding: 14px 26px; border-radius: 14px; background: rgba(10,12,28,.86); color: #fff; font-size: 34px; font-weight: 600; line-height: 1.3; text-align: center; }
+  .caption { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); width: max-content; max-width: 1560px; padding: 14px 28px; border-radius: 14px; background: rgba(10,12,28,.88); color: #fff; font-size: 33px; font-weight: 600; line-height: 1.32; text-align: center; }
+  .stepchip { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px; border-radius: 999px; background: #4338ca; color: #fff; font-size: 24px; font-weight: 650; box-shadow: 0 10px 30px rgba(17,24,39,.3); white-space: nowrap; }
   .lower { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-radius: 16px; background: rgba(17,20,42,.92); border: 1px solid rgba(255,255,255,.12); }
   .lower .step { font-size: 22px; font-weight: 600; padding: 8px 14px; border-radius: 10px; }
   .arrow { color: var(--muted); font-size: 24px; }
@@ -83,7 +84,7 @@ const cueOf = (f, i) => f.cues[Math.min(i, f.cues.length - 1)] ?? 0;
 const SCENES = {};
 let built = null, root = null;
 
-SCENES["s01-problem"] = {
+SCENES["g01-problem"] = {
   build(f) {
     const docs = [
       ["poster", "Poster", f.assets.poster], ["notice", "Notice", f.assets.notice], ["att", "Attendance sheet", f.assets.attendance],
@@ -91,7 +92,7 @@ SCENES["s01-problem"] = {
     ];
     const cw = 214, gap = 36, x0 = (W - (docs.length * cw + (docs.length - 1) * gap)) / 2;
     let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>
-      <div class="abs" style="left:80px;top:96px" id="title"><div class="eyebrow">The problem</div><div class="h2" style="margin-top:14px">One activity, many documents</div></div>`;
+      <div class="abs" style="left:80px;top:96px" id="title"><div class="eyebrow">The problem</div><div class="h2" style="margin-top:14px">One activity, many papers</div></div>`;
     docs.forEach(([id, label, src], i) => {
       const x = x0 + i * (cw + gap);
       const inner = src
@@ -101,7 +102,7 @@ SCENES["s01-problem"] = {
       if (i < docs.length - 1) html += `<div class="abs arrow" id="a-${i}" style="left:${x + cw + 4}px;top:455px;width:${gap - 8}px;text-align:center">→</div>`;
     });
     html += `<div class="abs" id="mismatch" style="left:${x0}px;top:296px;width:${2 * cw + gap}px;text-align:center"><span style="display:inline-block;padding:7px 14px;border-radius:999px;background:var(--bad-soft);border:1.5px solid rgba(248,113,113,.6);color:#fecaca;font-size:19px;font-weight:600">Poster: 31 Oct · Notice: 6 Nov</span></div>`;
-    const issues = [["Layers", "Information is scattered"], ["GitCompareArrows", "Dates and details may not match"], ["PenLine", "Attendance is often handwritten"], ["Copy", "Copied and checked by hand, every time"]];
+    const issues = [["Layers", "Details spread across many papers"], ["GitCompareArrows", "Papers may not agree"], ["PenLine", "Attendance is handwritten"], ["Copy", "Copied by hand, every time"]];
     const iw = 400, ig = 24, ix = (W - (4 * iw + 3 * ig)) / 2;
     issues.forEach(([ic, t], i) => {
       html += `<div class="abs card" id="i-${i}" style="left:${ix + i * (iw + ig)}px;top:780px;width:${iw}px;padding:20px 22px;display:flex;align-items:center;gap:16px">${icon(ic, 34, i === 1 ? "#fca5a5" : "#a5b4fc")}<span style="font-size:22px;font-weight:600;line-height:1.3">${t}</span></div>`;
@@ -115,24 +116,26 @@ SCENES["s01-problem"] = {
       appear(root.querySelector(`#d-${id}`), t, c1 - .4 + (i * d1 * .8) / 7, { dy: 30 });
       if (i < 6) appear(root.querySelector(`#a-${i}`), t, c1 - .2 + (i * d1 * .8) / 7, { dy: 0 });
     });
+    appear(root.querySelector("#i-0"), t, c1 + 1.5, { dy: 24 });
     appear(root.querySelector("#mismatch"), t, c2 + .8, { dy: 8 });
-    [0, 1, 2].forEach((i) => appear(root.querySelector(`#i-${i}`), t, c2 + i * Math.max(.9, (c3 - c2) / 3.2), { dy: 24 }));
-    appear(root.querySelector("#i-3"), t, c3 + .2, { dy: 24 });
+    appear(root.querySelector("#i-1"), t, c2 + 1.2, { dy: 24 });
+    appear(root.querySelector("#i-2"), t, c3 + .5, { dy: 24 });
+    appear(root.querySelector("#i-3"), t, c3 + 2.5, { dy: 24 });
   },
 };
 
-SCENES["s02-question"] = {
+SCENES["g02-question"] = {
   build(f) {
     return $(`<div class="layer"><div class="layer" style="background:radial-gradient(900px 600px at 50% 40%, rgba(99,102,241,.18), transparent 70%), var(--bg)"></div>
-      <div class="abs" style="left:0;right:0;top:250px;text-align:center" id="pre"><div class="eyebrow">The core question</div>
-        <div class="sub" style="margin-top:22px;font-size:30px">Generating a report is easy.<br/>Knowing it is <span style="color:#fff;font-weight:600">supported by evidence</span> is the hard part.</div></div>
+      <div class="abs" style="left:0;right:0;top:250px;text-align:center" id="pre"><div class="eyebrow">What we wanted</div>
+        <div class="sub" style="margin-top:22px;font-size:30px">Save teachers the repetitive work.<br/>But <span style="color:#fff;font-weight:600">every detail must come from a real document.</span></div></div>
       <div class="abs" style="left:220px;right:220px;top:520px;text-align:center"><div class="h1 typer" id="q" style="font-size:66px"></div></div></div>`);
   },
   update(f) {
     appear(root.querySelector("#pre"), f.t, cueOf(f, 0));
-    const full = "How can we automate the repetitive work without allowing AI to invent institutional facts?";
+    const full = "Can a computer do the repetitive work, without ever making up facts?";
     const cut = full.indexOf("without");
-    const p = clamp((f.t - cueOf(f, 1) + .2) / 3.2);
+    const p = clamp((f.t - cueOf(f, 1) + .2) / 2.8);
     const n = Math.round(full.length * p);
     const shown = full.slice(0, n);
     const caret = p < 1 ? `<span style="color:var(--brand2)">▍</span>` : "";
@@ -140,25 +143,25 @@ SCENES["s02-question"] = {
   },
 };
 
-SCENES["s03-product"] = {
+SCENES["g03-product"] = {
   build(f) {
     return $(`<div class="layer"><div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}
       <div class="abs" id="brand" style="left:80px;top:250px;width:760px">
         <div style="width:76px;height:76px;border-radius:18px;background:linear-gradient(135deg,#6366f1,#4338ca);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;box-shadow:0 12px 40px rgba(99,102,241,.45)">CO</div>
         <div class="h1" style="margin-top:34px">College Operations<br/>Copilot</div>
-        <div class="sub" style="margin-top:22px">Evidence-grounded automation for institutional operations</div>
+        <div class="sub" style="margin-top:22px">Activity reports from your own documents, checked and approved by you</div>
         <div id="pills" style="margin-top:40px;display:flex;gap:12px">
-          ${["Evidence", "Validation", "Human approval"].map((p, i) => `<span id="pl-${i}" style="padding:10px 18px;border-radius:999px;border:1.5px solid rgba(129,140,248,.5);background:rgba(99,102,241,.12);font-size:21px;font-weight:600;color:#c7d2fe">${p}</span>`).join("")}
+          ${["Your documents", "Your checks", "Your approval"].map((p, i) => `<span id="pl-${i}" style="padding:10px 18px;border-radius:999px;border:1.5px solid rgba(129,140,248,.5);background:rgba(99,102,241,.12);font-size:21px;font-weight:600;color:#c7d2fe">${p}</span>`).join("")}
         </div></div>
       <div class="abs" id="shot" style="left:900px;top:190px;width:1100px;height:619px;border-radius:18px;overflow:hidden;border:1.5px solid rgba(255,255,255,.18);box-shadow:0 40px 120px rgba(0,0,0,.55)">
         <img src="${f.assets.dashboard}" style="width:100%;height:100%;object-fit:cover;object-position:left top"/></div>
-      <div class="abs muted" id="cap" style="left:900px;top:828px;font-size:18px">The deployed app · dashboard</div></div>`);
+      <div class="abs muted" id="cap" style="left:900px;top:828px;font-size:18px">The real app, online · dashboard</div></div>`);
   },
   update(f) {
     appear(root.querySelector("#brand"), f.t, cueOf(f, 0), { dy: 24 });
-    appear(root.querySelector("#shot"), f.t, cueOf(f, 1) - .3, { dy: 0, dx: 80, dur: .9 });
-    appear(root.querySelector("#cap"), f.t, cueOf(f, 1) + .5);
-    [0, 1, 2].forEach((i) => appear(root.querySelector(`#pl-${i}`), f.t, cueOf(f, 1) + 2.4 + i * .35, { dy: 12 }));
+    appear(root.querySelector("#shot"), f.t, cueOf(f, 0) + 1.2, { dy: 0, dx: 80, dur: .9 });
+    appear(root.querySelector("#cap"), f.t, cueOf(f, 0) + 2);
+    [0, 1, 2].forEach((i) => appear(root.querySelector(`#pl-${i}`), f.t, cueOf(f, 1) + .5 + i * .5, { dy: 12 }));
   },
 };
 
@@ -217,9 +220,33 @@ SCENES["s04-architecture"] = {
   },
 };
 
-SCENES["s08-result"] = {
+SCENES["g04-how"] = {
   build() {
-    const steps = [["FileStack", "Documents", "posters · notices · sheets · photos"], ["Link2", "Structured evidence", "every value cites its source"], ["ListChecks", "Validated information", "conflicts and gaps resolved by people"], ["ShieldCheck", "Approved report", "signed off by faculty"]];
+    const parts = [["UploadCloud", "1", "You upload", "the papers you already have", false], ["ScanText", "2", "The app reads and fills in", "and shows the document and page for every detail", false], ["UserCheck", "3", "You check and decide", "correct mistakes · choose when papers disagree", true], ["ShieldCheck", "4", "You approve and download", "ready to print and sign", true]];
+    const w = 390, g = 30, x0 = (W - (4 * w + 3 * g)) / 2;
+    let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}
+      <div class="abs" id="ttl" style="left:80px;top:140px"><div class="h2">How it works, in four parts</div></div>`;
+    parts.forEach(([ic, n, t, s, you], i) => {
+      html += `<div class="abs card" id="h-${i}" style="left:${x0 + i * (w + g)}px;top:280px;width:${w}px;height:300px;padding:30px;${you ? "border-color:rgba(52,211,153,.55);background:linear-gradient(180deg,rgba(52,211,153,.10),rgba(52,211,153,.03))" : ""}">
+        <div style="display:flex;align-items:center;justify-content:space-between">${icon(ic, 46, you ? "#6ee7b7" : "#a5b4fc")}<span style="font-size:44px;font-weight:700;color:${you ? "rgba(110,231,183,.45)" : "rgba(165,180,252,.45)"}">${n}</span></div>
+        <div style="margin-top:26px;font-size:31px;font-weight:650;line-height:1.2">${t}</div>
+        <div style="margin-top:14px;font-size:21px;color:var(--fg2);line-height:1.4">${s}</div>
+        ${you ? `<div style="position:absolute;left:30px;bottom:22px;font-size:14px;font-weight:700;letter-spacing:.1em;color:#6ee7b7">DONE BY YOU</div>` : `<div style="position:absolute;left:30px;bottom:22px;font-size:14px;font-weight:700;letter-spacing:.1em;color:#a5b4fc">DONE BY THE APP</div>`}</div>`;
+    });
+    html += `<div class="abs" id="np" style="left:${x0}px;top:640px;display:flex;align-items:center;gap:14px;padding:16px 22px;border-radius:14px;background:var(--warn-soft);border:1.5px solid rgba(251,191,36,.5)">${icon("CircleSlash", 28, "#fcd34d")}<span style="font-size:24px;font-weight:600;color:#fde68a">Detail not found in any paper? The app writes “Not provided”. It never guesses.</span></div>`;
+    return $(`<div class="layer">${html}</div>`);
+  },
+  update(f) {
+    const t = f.t, c = (i) => cueOf(f, i);
+    appear(root.querySelector("#ttl"), t, c(0) - .3);
+    [1, 2, 3, 4].forEach((k, i) => appear(root.querySelector(`#h-${i}`), t, c(k) + .1, { dy: 24 }));
+    appear(root.querySelector("#np"), t, c(5) + .2, { dy: 14 });
+  },
+};
+
+SCENES["g08-recap"] = {
+  build() {
+    const steps = [["UploadCloud", "You upload", "the papers you already have"], ["ScanText", "The app fills in", "and shows where each detail came from"], ["UserCheck", "You check and decide", "correct, confirm, choose"], ["ShieldCheck", "You approve", "then download, print and sign"]];
     const w = 360, g = 70, x0 = (W - (4 * w + 3 * g)) / 2;
     let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}`;
     steps.forEach(([ic, t, s], i) => {
@@ -227,17 +254,17 @@ SCENES["s08-result"] = {
       html += `<div class="abs card" id="r-${i}" style="left:${x}px;top:360px;width:${w}px;height:250px;padding:30px">${icon(ic, 42, i === 3 ? "#6ee7b7" : "#a5b4fc")}<div style="margin-top:22px;font-size:30px;font-weight:650">${t}</div><div style="margin-top:12px;font-size:20px;color:var(--fg2)">${s}</div></div>`;
       if (i < 3) html += `<div class="abs arrow" id="ra-${i}" style="left:${x + w + 10}px;top:462px;width:${g - 20}px;text-align:center;font-size:34px">→</div>`;
     });
-    html += `<div class="abs" id="goal" style="left:0;right:0;top:700px;text-align:center"><div class="sub" style="font-size:30px">Less repetitive documentation work. <span style="color:#fff;font-weight:600">The institution keeps control.</span></div></div>`;
+    html += `<div class="abs" id="goal" style="left:0;right:0;top:700px;text-align:center"><div class="sub" style="font-size:30px">Less copying and searching. <span style="color:#fff;font-weight:600">You stay in control.</span></div></div>`;
     return $(`<div class="layer">${html}</div>`);
   },
   update(f) {
-    const d = Math.max(.6, (cueOf(f, 1) - cueOf(f, 0)) / 4.4);
+    const d = Math.max(.9, (cueOf(f, 1) - cueOf(f, 0)) / 4.2);
     [0, 1, 2, 3].forEach((i) => { appear(root.querySelector(`#r-${i}`), f.t, cueOf(f, 0) + i * d, { dy: 24 }); if (i < 3) appear(root.querySelector(`#ra-${i}`), f.t, cueOf(f, 0) + i * d + .3, { dy: 0 }); });
     appear(root.querySelector("#goal"), f.t, cueOf(f, 1) + .2);
   },
 };
 
-SCENES["s09-future"] = {
+SCENES["g09-future"] = {
   build() {
     const node = (id, x, y, w, ic, title, sub, kind = "future") => {
       const st = kind === "future" ? "border:2px dashed rgba(251,191,36,.65);background:rgba(251,191,36,.05)" : "border:2px solid rgba(52,211,153,.6);background:rgba(52,211,153,.08)";
@@ -247,47 +274,47 @@ SCENES["s09-future"] = {
     const cx = W / 2, aw = 420;
     let html = `<div class="layer" style="background:radial-gradient(1000px 600px at 50% 0%, rgba(251,191,36,.08), transparent 70%), var(--bg)"></div><div class="layer grid-bg"></div>${chipHtml("FUTURE ROADMAP")}
       <svg class="lines" id="svg"></svg>
-      <div class="abs card" id="today" style="left:80px;top:150px;width:420px;padding:18px 22px;border-color:rgba(129,140,248,.55)"><div style="font-size:15px;font-weight:700;letter-spacing:.12em;color:#a5b4fc">BUILT TODAY</div><div style="margin-top:6px;font-size:22px;font-weight:600">Evidence-grounded workflow</div><div style="margin-top:4px;font-size:17px;color:var(--fg2)">the product shown in this video</div></div>`;
-    html += node("o", cx - 230, 140, 460, "Network", "Orchestrator", "coordinates the agents");
-    html += node("a1", cx - aw * 1.5 - 40, 330, aw, "FolderSearch", "Document agent", "finds and organises relevant documents");
-    html += node("a2", cx - aw / 2, 330, aw, "ListChecks", "Validation agent", "checks extracted data against evidence and rules");
-    html += node("a3", cx + aw / 2 + 40, 330, aw, "GitCompareArrows", "Reconciliation agent", "prepares conflicts for a person to resolve");
-    html += node("a4", cx - 230, 520, 460, "FileText", "Report agent", "prepares reports from approved evidence");
-    html += node("a5", cx - 230, 690, 460, "BellRing", "Follow-up agent", "identifies missing documentation");
-    html += node("fa", cx - 230, 860, 460, "UserCheck", "Faculty approval", "a person signs off — always", "human");
-    html += `<div class="abs" id="note" style="left:80px;top:930px;width:520px;font-size:21px;color:#fde68a;line-height:1.4">To be built after validating the current workflow with real users.</div>`;
+      <div class="abs card" id="today" style="left:80px;top:150px;width:400px;padding:18px 22px;border-color:rgba(129,140,248,.55)"><div style="font-size:15px;font-weight:700;letter-spacing:.12em;color:#a5b4fc">BUILT TODAY</div><div style="margin-top:6px;font-size:22px;font-weight:600">The app in this video</div><div style="margin-top:4px;font-size:17px;color:var(--fg2)">upload · check · approve</div></div>`;
+    html += node("o", cx - 230, 120, 460, "Network", "Coordinator", "keeps the helpers working together");
+    html += node("a1", cx - aw * 1.5 - 40, 290, aw, "FolderSearch", "Document helper", "collects the right documents");
+    html += node("a2", cx - aw / 2, 290, aw, "ListChecks", "Checking helper", "checks details against college rules");
+    html += node("a3", cx + aw / 2 + 40, 290, aw, "GitCompareArrows", "Disagreement helper", "prepares disagreements for you to decide");
+    html += node("a4", cx - 230, 450, 460, "FileText", "Report helper", "drafts reports from checked details");
+    html += node("a5", cx - 230, 600, 460, "BellRing", "Follow-up helper", "reminds you about missing documents");
+    html += node("fa", cx - 230, 750, 460, "UserCheck", "Teacher approval", "the teacher signs off, always", "human");
+    html += `<div class="abs" id="note" style="left:80px;top:700px;width:440px;font-size:22px;color:#fde68a;line-height:1.4">Planned only. To be built after learning from real teachers.</div>`;
     const el = $(`<div class="layer">${html}</div>`);
     const L = (id, x1, y1, x2, y2) => `<path id="${id}" d="M ${x1} ${y1} C ${x1} ${(y1 + y2) / 2}, ${x2} ${(y1 + y2) / 2}, ${x2} ${y2}" stroke="rgba(251,191,36,.55)" stroke-width="2.5" stroke-dasharray="7 7" fill="none"/>`;
     const a1x = cx - aw - 40, a3x = cx + aw + 40;
-    el.querySelector("#svg").innerHTML = [L("e1", cx, 236, a1x, 330), L("e2", cx, 236, cx, 330), L("e3", cx, 236, a3x, 330), L("e4", a1x, 432, cx, 520), L("e5", cx, 432, cx, 520), L("e6", a3x, 432, cx, 520), L("e7", cx, 616, cx, 690), L("e8", cx, 786, cx, 860)].join("");
+    el.querySelector("#svg").innerHTML = [L("e1", cx, 216, a1x, 290), L("e2", cx, 216, cx, 290), L("e3", cx, 216, a3x, 290), L("e4", a1x, 386, cx, 450), L("e5", cx, 386, cx, 450), L("e6", a3x, 386, cx, 450), L("e7", cx, 546, cx, 600), L("e8", cx, 696, cx, 750)].join("");
     return el;
   },
   update(f) {
     const t = f.t, c = (i) => cueOf(f, i);
-    const d1 = Math.max(4, c(2) - c(1)), ag = (i) => c(1) + .1 + (i * d1 * .92) / 5;
+    const d1 = Math.max(4, c(3) - c(2)), ag = (i) => c(2) + .5 + (i * d1 * .8) / 5;
     appear(root.querySelector("#today"), t, c(0));
-    appear(root.querySelector("#o"), t, c(0) + 3.2, { max: .55 });
+    appear(root.querySelector("#o"), t, c(1) + 1.0, { max: .55 });
     ["a1", "a2", "a3", "a4", "a5"].forEach((id, i) => appear(root.querySelector(`#${id}`), t, ag(i)));
-    const o = root.querySelector("#o"); if (t >= c(2)) { o.style.opacity = String(.55 + .45 * prog(t, c(2), .5)); o.style.boxShadow = `0 0 ${40 * prog(t, c(2))}px rgba(251,191,36,.35)`; }
-    appear(root.querySelector("#fa"), t, c(2) + 1.2);
-    [["e1", ag(0)], ["e2", ag(1)], ["e3", ag(2)], ["e4", ag(3)], ["e5", ag(3)], ["e6", ag(3)], ["e7", ag(4)], ["e8", c(2) + 1.1]].forEach(([id, a]) => (root.querySelector(`#${id}`).style.opacity = String(prog(t, a - .2, .4))));
-    appear(root.querySelector("#note"), t, c(3));
+    const ot = c(2) + d1 * .85; const o = root.querySelector("#o"); if (t >= ot) { o.style.opacity = String(.55 + .45 * prog(t, ot, .5)); o.style.boxShadow = `0 0 ${40 * prog(t, ot)}px rgba(251,191,36,.35)`; }
+    appear(root.querySelector("#fa"), t, c(3));
+    [["e1", ag(0)], ["e2", ag(1)], ["e3", ag(2)], ["e4", ag(3)], ["e5", ag(3)], ["e6", ag(3)], ["e7", ag(4)], ["e8", c(3) - .1]].forEach(([id, a]) => (root.querySelector(`#${id}`).style.opacity = String(prog(t, a - .2, .4))));
+    appear(root.querySelector("#note"), t, c(4));
   },
 };
 
-SCENES["s10-pilot"] = {
+SCENES["g10-pilot"] = {
   build() {
-    const steps = ["Faculty", "Use the product", "Complete an activity", "Give feedback", "Identify friction", "Improve the product", "Repeat"];
-    const cx = 1240, cy = 560, R = 330;
+    const steps = ["Teachers", "Use the app", "Finish an activity", "Give feedback", "We find what is hard", "We improve the app", "Repeat"];
+    const cx = 1240, cy = 500, R = 290;
     let html = `<div class="layer" style="background:radial-gradient(900px 600px at 70% 50%, rgba(45,212,191,.10), transparent 70%), var(--bg)"></div><div class="layer grid-bg"></div>${chipHtml("PILOT")}
-      <div class="abs" id="ttl" style="left:80px;top:300px;width:620px"><div class="eyebrow" style="color:#5eead4">Planned pilot</div><div class="h2" style="margin-top:16px">Mechanical Engineering<br/>KDK College of Engineering, Nagpur</div>
-      <div class="sub" style="margin-top:26px" id="why">Goal: learn whether the workflow genuinely saves effort and is useful to faculty.</div></div>
+      <div class="abs" id="ttl" style="left:80px;top:260px;width:620px"><div class="eyebrow" style="color:#5eead4">Planned pilot</div><div class="h2" style="margin-top:16px">Mechanical Engineering<br/>KDK College of Engineering, Nagpur</div>
+      <div class="sub" style="margin-top:26px" id="why">Goal: find out whether it truly saves teachers time and effort.</div></div>
       <svg class="lines"><circle id="ring" cx="${cx}" cy="${cy}" r="${R}" stroke="rgba(45,212,191,.35)" stroke-width="3" fill="none" stroke-dasharray="10 10"/></svg>`;
     steps.forEach((s, i) => {
       const a = -Math.PI / 2 + (i * 2 * Math.PI) / steps.length, x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
       html += `<div class="abs" id="p-${i}" style="left:${x - 130}px;top:${y - 34}px;width:260px;height:68px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:21px;font-weight:600;background:#12253a;border:1.5px solid rgba(45,212,191,.55)"><span style="color:#5eead4;font-size:16px">${i + 1}</span>${s}</div>`;
     });
-    html += `<div class="abs center" id="mid" style="left:${cx - 150}px;top:${cy - 60}px;width:300px;height:120px;flex-direction:column;text-align:center">${icon("RefreshCw", 46, "#5eead4")}<div style="margin-top:10px;font-size:20px;color:var(--fg2)">learn → improve → repeat</div></div>`;
+    html += `<div class="abs center" id="mid" style="left:${cx - 150}px;top:${cy - 60}px;width:300px;height:120px;flex-direction:column;text-align:center">${icon("RefreshCw", 46, "#5eead4")}<div style="margin-top:10px;font-size:20px;color:var(--fg2)">learn · improve · repeat</div></div>`;
     return $(`<div class="layer">${html}</div>`);
   },
   update(f) {
@@ -300,21 +327,21 @@ SCENES["s10-pilot"] = {
   },
 };
 
-SCENES["s12-closing"] = {
+SCENES["g12-closing"] = {
   build() {
-    const rows = [["CURRENT PRODUCT", "current", "Current", "Evidence-grounded workflow"], ["FUTURE ROADMAP", "future", "Next", "Agentic college operations (roadmap)"], ["PILOT", "pilot", "Pilot", "Learn → Improve → Scale"]];
+    const rows = [["CURRENT PRODUCT", "current", "Today", "The app shown in this video"], ["FUTURE ROADMAP", "future", "Next", "Planned helpers (not built yet)"], ["PILOT", "pilot", "Pilot", "Learn from teachers · improve · repeat"]];
     let html = `<div class="layer bg-grad"></div><div class="layer grid-bg"></div>
-      <div class="abs" id="name" style="left:0;right:0;top:200px;text-align:center"><div style="margin:0 auto;width:84px;height:84px;border-radius:20px;background:linear-gradient(135deg,#6366f1,#4338ca);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;box-shadow:0 12px 40px rgba(99,102,241,.45)">CO</div>
+      <div class="abs" id="name" style="left:0;right:0;top:170px;text-align:center"><div style="margin:0 auto;width:84px;height:84px;border-radius:20px;background:linear-gradient(135deg,#6366f1,#4338ca);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;box-shadow:0 12px 40px rgba(99,102,241,.45)">CO</div>
       <div class="h1" style="margin-top:30px">College Operations Copilot</div>
-      <div class="sub" style="margin-top:18px;font-size:30px">From scattered evidence to validated institutional documentation.</div></div>`;
+      <div class="sub" style="margin-top:18px;font-size:30px">From scattered documents to an approved report, with the teacher in control.</div></div>`;
     rows.forEach(([_, cls, a, b], i) => {
-      html += `<div class="abs" id="row-${i}" style="left:560px;width:800px;top:${600 + i * 92}px;display:flex;align-items:center;gap:22px"><span class="chip ${cls}" style="position:static;width:170px;justify-content:center">${a}</span><span style="font-size:28px;font-weight:600">${b}</span></div>`;
+      html += `<div class="abs" id="row-${i}" style="left:560px;width:800px;top:${540 + i * 86}px;display:flex;align-items:center;gap:22px"><span class="chip ${cls}" style="position:static;width:170px;justify-content:center">${a}</span><span style="font-size:28px;font-weight:600">${b}</span></div>`;
     });
     return $(`<div class="layer">${html}</div>`);
   },
   update(f) {
     appear(root.querySelector("#name"), f.t, cueOf(f, 0) - .2, { dy: 20 });
-    [0, 1, 2].forEach((i) => appear(root.querySelector(`#row-${i}`), f.t, cueOf(f, 1) + i * 1.4, { dy: 14 }));
+    [0, 1, 2].forEach((i) => appear(root.querySelector(`#row-${i}`), f.t, cueOf(f, 0) + 3.5 + i * 1.2, { dy: 14 }));
   },
 };
 
@@ -322,7 +349,7 @@ SCENES["s12-closing"] = {
 SCENES["metrics"] = {
   build(f) {
     return $(`<div class="layer"><div class="layer bg-grad"></div><div class="layer grid-bg"></div>${chipHtml("CURRENT PRODUCT")}
-      <div class="abs" id="ttl" style="left:80px;top:150px"><div class="h2">Administrator view · Pilot page</div><div class="sub" style="margin-top:12px">Counted from the database when the page is opened. Test accounts are excluded.</div></div>
+      <div class="abs" id="ttl" style="left:80px;top:150px"><div class="h2">What administrators see · Pilot page</div><div class="sub" style="margin-top:12px">Simple counts from the app, plus every feedback answer. Demo and test accounts are not counted.</div></div>
       <div class="abs" id="img" style="left:${(W - Math.min(1760, f.assets.metricsW)) / 2}px;top:400px;width:${Math.min(1760, f.assets.metricsW)}px;border-radius:16px;overflow:hidden;border:1.5px solid rgba(255,255,255,.18);box-shadow:0 30px 90px rgba(0,0,0,.5);background:#f6f7fb;padding:18px">
         <img src="${f.assets.metrics}" style="width:100%;display:block"/></div></div>`);
   },
@@ -351,7 +378,9 @@ function renderFootage(f) {
     if (w > 0) ov += `<div class="callout ${c.tone || ""}" style="left:${x - pad}px;top:${y - pad}px;width:${w + 2 * pad}px;height:${h + 2 * pad}px;opacity:${c.alpha}"></div>`;
     if (c.label) {
       const above = y - pad - 58 > 70;
-      const lx = clamp(x - pad, 20, W - 640), ly = above ? y - pad - 54 : y + h + pad + 12;
+      // Label-only callouts (no outline) sit just inside the region, below the step title.
+      const lx = w > 0 ? clamp(x - pad, 20, W - 640) : clamp(x + 30, 20, W - 640);
+      const ly = w > 0 ? (above ? y - pad - 54 : y + h + pad + 12) : Math.max(y + 24, 84);
       ov += `<div class="clabel ${c.tone || ""}" style="left:${lx}px;top:${ly}px;opacity:${c.alpha}">${c.label}</div>`;
     }
   }
@@ -362,6 +391,7 @@ function renderFootage(f) {
 function overlays(f) {
   let h = "";
   if (f.badges && f.badges.length) h += `<div class="badges">${f.badges.map((b) => `<span class="badge ${b.amber ? "amber" : ""}">${b.live ? '<span class="live"></span>' : ""}${b.text}</span>`).join("")}</div>`;
+  if (f.step) h += `<div class="stepchip" style="opacity:${f.stepAlpha ?? 1}">${f.step}</div>`;
   if (f.caption) h += `<div class="caption">${f.caption}</div>`;
   return h;
 }

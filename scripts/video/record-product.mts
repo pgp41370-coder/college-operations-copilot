@@ -132,7 +132,12 @@ async function signIn(p: Page, email: string, password: string) {
   await p.getByLabel("Email").fill(email);
   await p.getByLabel("Password").fill(password);
   await p.getByRole("button", { name: "Sign in" }).click();
-  await p.waitForURL(/\/dashboard/, { timeout: 30_000 });
+  const outcome = await Promise.race([
+    p.waitForURL(/\/dashboard/, { timeout: 45_000 }).then(() => "ok"),
+    // The sign-in form's own error message (Next.js also renders an empty role="alert" announcer).
+    p.locator("form p[role=alert]").first().waitFor({ timeout: 45_000 }).then(async () => (await p.locator("form p[role=alert]").first().innerText()).trim()),
+  ]).catch(() => "no response from the sign-in page");
+  if (outcome !== "ok") throw new Error(`Admin sign-in failed: ${outcome} Check the email and password and run the command again.`);
 }
 
 async function main() {
@@ -182,51 +187,122 @@ async function main() {
     await cdp.send("Page.startScreencast", { format: "jpeg", quality: 92, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
     await hold(1200);
 
+    // ---- Teacher-paced walkthrough: every screen is held long enough to be explained.
     await mark("login", { form: page.locator("form") });
-    await type(page.getByLabel("Email"), demoEmail, 40);
-    await type(page.getByLabel("Password"), demoPassword, 30);
+    await hold(1500);
+    await type(page.getByLabel("Email"), demoEmail, 75);
+    await hold(500);
+    await type(page.getByLabel("Password"), demoPassword, 60);
+    await hold(900);
+    await mark("login-click", { button: page.getByRole("button", { name: "Sign in" }) });
     await click(page.getByRole("button", { name: "Sign in" }), 0);
     await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
     await mark("login-submitted");
     await hold(1500);
-    await mark("dashboard", { kpis: page.locator("main .grid").first(), env: page.getByText("Production", { exact: true }) });
-    await hold(2500);
 
-    await click(page.getByRole("link", { name: "Create Activity", exact: true }).first(), 1200);
+    await mark("dashboard", { kpis: page.locator("main .grid").first(), env: page.getByText("Production", { exact: true }) });
+    await moveTo(page.locator("main .grid").first());
+    await hold(3500);
+    await mark("dash-attention", { attention: page.getByText("Needs attention").locator("xpath=ancestor::div[contains(@class,'card')][1]") });
+    await moveTo(page.getByText("Needs attention"));
+    await hold(3000);
+    const createLink = page.getByRole("link", { name: "Create Activity", exact: true }).first();
+    await mark("dash-create", { button: createLink });
+    await moveTo(createLink);
+    await hold(2200);
+    await click(createLink, 1500);
+
     await mark("create", { stepper: page.getByRole("list", { name: "Workflow progress" }) });
+    await moveTo(page.getByRole("list", { name: "Workflow progress" }));
+    await hold(4000);
+    await mark("create-form", { form: page.locator("form").first() });
+    await page.mouse.move(900, 600, { steps: 20 });
+    for (let i = 0; i < 3; i++) { await page.mouse.wheel(0, 260); await hold(900); }
     await hold(1500);
-    await click(page.getByRole("button", { name: /Create and continue/ }), 0);
+    await scrollTop();
+    await mark("create-template", { template: page.getByLabel("Template") });
+    await moveTo(page.getByLabel("Template"));
+    await hold(2500);
+    const createBtn = page.getByRole("button", { name: /Create and continue/ });
+    await mark("create-submit", { button: createBtn });
+    await moveTo(createBtn);
+    await hold(1500);
+    await click(createBtn, 0);
     await page.waitForURL(/tab=evidence/, { timeout: 30_000 });
     activityUrl = page.url().split("?")[0];
-    await hold(1200);
+    await hold(1500);
 
-    await mark("upload", { dropzone: page.getByText("Upload evidence", { exact: true }) });
+    await mark("upload", { kind: page.getByLabel("Document type"), dropzone: page.getByText("Upload evidence", { exact: true }).locator("xpath=ancestor::div[contains(@class,'border-dashed')][1]") });
+    await moveTo(page.getByLabel("Document type"));
+    await hold(2500);
+    await moveTo(page.getByText("browse files"));
+    await hold(2500);
+    await mark("upload-notice");
     await upload("Notice", "demo-notice.pdf", /Extracted 1 page/);
-    await mark("upload-ocr");
+    await hold(2000);
+    await mark("upload-report");
     await upload("Existing activity report", "demo-activity-report-scan.pdf", /Extracted 1 page/);
+    await hold(1500);
+    await mark("upload-poster");
     await upload("Poster", "demo-poster.png", /Extracted 1 page/);
+    await hold(1500);
+    await mark("upload-att");
     await upload("Attendance sheet", "demo-attendance-sheet.png", /attendance rows drafted/);
+    await hold(1500);
+    await mark("upload-photo");
     await upload("Photograph", "demo-event-photo.jpg", /stored as evidence/);
+    await hold(1500);
     await scrollTo(page.getByTestId("upload-job").first(), 120);
     await mark("upload-done", { jobs: page.locator("section[aria-label='Upload progress']") });
-    await hold(2500);
+    await hold(3500);
+    await scrollTo(page.getByRole("heading", { name: /^Documents/ }), 120);
+    await mark("upload-list", { list: page.locator("section[aria-label='Documents']") });
+    await page.mouse.move(800, 500, { steps: 20 });
+    await hold(5000);
     await scrollTop();
 
-    await click(page.getByRole("tab", { name: "Overview" }), 1200);
+    await click(page.getByRole("tab", { name: "Overview" }), 1500);
     await mark("overview", { trust: page.getByText("Trust summary").locator("xpath=ancestor::div[contains(@class,'card')][1]") });
-    await hold(3000);
+    await moveTo(page.getByText("Trust summary"));
+    await hold(9000);
+    const attention = page.getByText("What needs attention").locator("xpath=ancestor::div[contains(@class,'card')][1]");
+    await scrollTo(attention, 140);
+    await mark("overview-issues", { issues: attention });
+    await moveTo(attention);
+    await hold(5000);
+    await scrollTop();
 
-    await click(page.getByRole("tab", { name: /^Review/ }), 1200);
+    await click(page.getByRole("tab", { name: /^Review/ }), 1500);
+    await mark("review-start");
+    await hold(2500);
     const category = page.getByTestId("field-category");
     await scrollTo(category, 220);
     await mark("review", { field: category, source: category.getByRole("link").first() });
+    await moveTo(category.getByText("Technical", { exact: true }).first());
+    await hold(2500);
     await moveTo(category.getByRole("link").first());
-    await hold(2200);
+    await hold(3500);
+    await moveTo(category.getByRole("button", { name: "Preview source" }));
+    await hold(1200);
     await click(category.getByRole("button", { name: "Preview source" }), 2500);
     await mark("preview", { panel: page.getByRole("dialog") });
-    await hold(3500);
+    await page.mouse.move(1350, 450, { steps: 25 });
+    await hold(5500);
     await page.keyboard.press("Escape");
-    await hold(800);
+    await hold(1200);
+    const low = page.locator("[data-testid^='field-']", { has: page.getByRole("button", { name: "Confirm", exact: true }) }).first();
+    if (await low.count()) {
+      await scrollTo(low, 260);
+      await mark("lowconf", { card: low, badge: low.getByText("Needs review").first(), confirm: low.getByRole("button", { name: "Confirm", exact: true }) });
+      await moveTo(low.getByText("Needs review").first());
+      await hold(3500);
+      await moveTo(low.getByRole("button", { name: "Confirm", exact: true }));
+      await hold(2000);
+      await mark("lowconf-click");
+      await click(low.getByRole("button", { name: "Confirm", exact: true }), 2500);
+      await mark("lowconf-done");
+      await hold(1500);
+    }
 
     const date = page.getByTestId("field-activity_date");
     await scrollTo(date, 120);
@@ -237,45 +313,69 @@ async function main() {
       poster: cands.filter({ hasText: "demo-poster.png" }),
       notice: cands.filter({ hasText: "demo-notice.pdf" }),
       report: cands.filter({ hasText: "demo-activity-report-scan.pdf" }),
+      attendance: cands.filter({ hasText: "demo-attendance-sheet.png" }),
     });
+    await moveTo(date.getByText(/Documents contain different values/));
+    await hold(4000);
     await moveTo(cands.filter({ hasText: "demo-poster.png" }).first());
-    await hold(2500);
+    await mark("conflict-poster");
+    await hold(4500);
     await moveTo(cands.filter({ hasText: "demo-notice.pdf" }).first());
+    await mark("conflict-others");
+    await hold(3000);
+    await moveTo(cands.filter({ hasText: "demo-attendance-sheet.png" }).first());
     await hold(2500);
     const choice = cands.filter({ hasText: "06/11/2026" }).filter({ hasText: "demo-activity-report-scan.pdf" }).first();
     await moveTo(choice);
-    await hold(1500);
+    await hold(3500);
     await mark("choose", { button: choice.getByRole("button", { name: "Use this value" }) });
+    await moveTo(choice.getByRole("button", { name: "Use this value" }));
+    await hold(1500);
     await click(choice.getByRole("button", { name: "Use this value" }), 1500);
     await date.getByText(/Selected by reviewer/).waitFor({ timeout: 30_000 });
     await mark("chosen", { card: date });
-    await hold(2500);
+    await hold(4500);
     const confirm = page.getByRole("button", { name: "Confirm", exact: true });
-    for (let i = 0; i < 20 && (await confirm.count()); i++) await click(confirm.first(), 900);
+    for (let i = 0; i < 20 && (await confirm.count()); i++) await click(confirm.first(), 1200);
     await scrollTop();
 
     await click(page.getByRole("tab", { name: /^Attendance/ }), 1500);
-    await mark("attendance", {
-      stats: page.getByText("Stated total").locator("xpath=ancestor::div[contains(@class,'grid')][1]"),
-      recon: page.getByText("Participant reconciliation").locator("xpath=ancestor::div[contains(@class,'card')][1]"),
-    });
-    await hold(3000);
     const rows = page.getByTestId("attendance-row");
     await scrollTo(rows.first(), 260);
     await mark("attendance-rows", { rows: page.locator("table").last(), status: rows.first().getByText("Needs verification") });
-    await hold(2500);
+    await moveTo(rows.first().getByText("Needs verification"));
+    await hold(6000);
+    await scrollTop();
+    await mark("attendance", {
+      stats: page.getByText("Stated total", { exact: true }).locator("xpath=ancestor::div[contains(@class,'grid')][1]"),
+      recon: page.getByText("Participant reconciliation").locator("xpath=ancestor::div[contains(@class,'card')][1]"),
+    });
+    await moveTo(page.getByText("Stated total", { exact: true }));
+    await hold(3500);
+    await moveTo(page.getByText("Participant reconciliation", { exact: true }));
+    await hold(4500);
     const add = page.getByTestId("new-attendance-row");
     await scrollTo(add, 520);
-    await type(add.getByPlaceholder("#"), "8");
-    await type(add.getByPlaceholder("Name as written on the sheet"), "Demo Student Harsh", 50);
+    await mark("attendance-add", { row: add });
+    await hold(1500);
+    await type(add.getByPlaceholder("#"), "8", 120);
+    await type(add.getByPlaceholder("Name as written on the sheet"), "Demo Student Harsh", 90);
+    await hold(600);
+    await moveTo(add.locator("select"));
     await add.locator("select").selectOption({ label: "Male" });
-    await hold(400);
+    await hold(1200);
     await click(add.getByRole("button", { name: "Add row" }), 1500);
     await rows.filter({ has: page.locator("input[value='Demo Student Harsh']") }).waitFor({ timeout: 30_000 });
+    await mark("attendance-added");
+    await hold(2000);
     await scrollTop();
-    await click(page.getByRole("button", { name: "Mark all rows verified" }), 900);
+    const verifyAll = page.getByRole("button", { name: "Mark all rows verified" });
+    await scrollTo(verifyAll, 300);
+    await moveTo(verifyAll);
+    await hold(2000);
+    await click(verifyAll, 900);
     await mark("verify-confirm", { dialog: page.getByRole("dialog") });
-    await hold(1500);
+    await hold(3000);
     await click(page.getByRole("dialog").getByRole("button", { name: "Confirm" }), 1500);
     await page.getByText("Reconciled", { exact: true }).first().waitFor({ timeout: 30_000 });
     await scrollTop();
@@ -283,64 +383,113 @@ async function main() {
       recon: page.getByText("Participant reconciliation").locator("xpath=ancestor::div[contains(@class,'card')][1]"),
       badge: page.getByText("Reconciled", { exact: true }).first(),
     });
-    await hold(3000);
+    await moveTo(page.getByText("Reconciled", { exact: true }).first());
+    await hold(5000);
 
-    await click(page.getByRole("tab", { name: "Reports" }), 1200);
-    await mark("reports");
-    await click(page.getByRole("button", { name: /Generate reports/ }).first(), 0);
+    await click(page.getByRole("tab", { name: "Reports" }), 1500);
+    const gen = page.getByRole("button", { name: /Generate reports/ }).first();
+    await mark("reports", { button: gen });
+    await moveTo(gen);
+    await hold(2500);
+    await click(gen, 0);
     await page.locator(".paper").waitFor({ timeout: 60_000 });
     await hold(1200);
     await mark("generated", { cards: page.getByText("Activity Report", { exact: true }).first().locator("xpath=ancestor::div[contains(@class,'grid')][1]") });
-    await hold(1500);
+    await moveTo(page.getByText("Activity Report", { exact: true }).first());
+    await hold(2500);
+    await moveTo(page.getByText("Detailed Report", { exact: true }).first());
+    await hold(2000);
+    await moveTo(page.getByText("Attendance Summary", { exact: true }).first());
+    await hold(2500);
     await scrollTo(page.locator(".paper"), 120);
     await mark("paper", { paper: page.locator(".paper"), details: page.getByText("Document details") });
+    await page.mouse.move(900, 600, { steps: 20 });
+    await hold(3500);
+    const np = page.locator(".paper .missing-mark").first();
+    await scrollTo(np, 400);
+    await mark("paper-np", { np });
+    await moveTo(np);
+    await hold(6000);
+    await scrollTop();
+    await click(page.getByRole("radio", { name: "Detailed Report" }), 1200);
+    await scrollTo(page.locator(".paper"), 120);
+    await mark("detailed", { paper: page.locator(".paper") });
+    await page.mouse.move(900, 600, { steps: 20 });
+    for (let i = 0; i < 3; i++) { await page.mouse.wheel(0, 300); await hold(1100); }
+    await scrollTop();
+    await click(page.getByRole("radio", { name: "Attendance Summary" }), 1200);
+    await scrollTo(page.locator(".paper"), 120);
+    await mark("attsum", { paper: page.locator(".paper") });
+    await page.mouse.move(900, 600, { steps: 20 });
     await hold(3500);
     await scrollTop();
+    await mark("draft-note", { cards: page.getByText("Activity Report", { exact: true }).first().locator("xpath=ancestor::div[contains(@class,'grid')][1]") });
+    await moveTo(page.getByText("Draft").first());
+    await hold(3500);
 
     await click(page.getByRole("tab", { name: "Approve" }), 1500);
     await mark("approve", { checklist: page.getByText("Approval readiness").locator("xpath=ancestor::div[contains(@class,'card')][1]"), button: page.getByRole("button", { name: "Approve", exact: true }) });
-    await hold(2500);
+    await moveTo(page.getByText("Approval readiness"));
+    await hold(5000);
     await moveTo(page.getByRole("button", { name: "Approve", exact: true }));
-    await hold(300);
+    await hold(2500);
     await mark("approve-click");
     await page.getByRole("button", { name: "Approve", exact: true }).click();
     await page.getByText("This activity is approved and read-only.").waitFor({ timeout: 30_000 });
     await hold(800);
-    await mark("approved", { header: page.getByText(/Approved by Demo Faculty/).first() });
-    await hold(2500);
+    await mark("approved", { header: page.getByText(/Approved by Demo Faculty/).first(), notice: page.getByText("Approved — read-only") });
+    await moveTo(page.getByText(/Approved by Demo Faculty/).first());
+    await hold(5000);
 
-    await click(page.getByRole("tab", { name: "Reports" }), 1200);
+    await click(page.getByRole("tab", { name: "Reports" }), 1500);
     await mark("exports", { cards: page.getByText("Activity Report", { exact: true }).first().locator("xpath=ancestor::div[contains(@class,'grid')][1]") });
-    for (const n of ["Activity Report (.docx)", "Activity Report (.pdf)", "Detailed Report (.pdf)"]) {
-      const [d] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), click(page.getByRole("link", { name: n }), 500)]);
-      await d.path();
-    }
-    const [pk] = await Promise.all([page.waitForEvent("download", { timeout: 120_000 }), click(page.getByRole("button", { name: "Compiled activity packet (.pdf)" }), 500)]);
-    await pk.path();
     await hold(1500);
+    const docx = page.getByRole("link", { name: "Activity Report (.docx)" });
+    await mark("dl-docx", { button: docx });
+    await moveTo(docx);
+    await hold(1800);
+    const [d1] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), click(docx, 1500)]);
+    await d1.path();
+    const pdf = page.getByRole("link", { name: "Activity Report (.pdf)" });
+    await mark("dl-pdf", { button: pdf });
+    await moveTo(pdf);
+    await hold(1800);
+    const [d2] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), click(pdf, 1500)]);
+    await d2.path();
+    const packet = page.getByRole("button", { name: "Compiled activity packet (.pdf)" });
+    await mark("dl-packet", { button: packet });
+    await moveTo(packet);
+    await hold(2200);
+    const [pk] = await Promise.all([page.waitForEvent("download", { timeout: 120_000 }), click(packet, 500)]);
+    await pk.path();
+    await hold(3000);
 
     await click(page.getByRole("tab", { name: "Audit" }), 1500);
     await mark("audit", { timeline: page.getByText("Audit timeline").locator("xpath=ancestor::div[contains(@class,'card')][1]") });
-    await hold(2000);
-    await page.mouse.wheel(0, 500);
-    await hold(2000);
+    await page.mouse.move(900, 500, { steps: 20 });
+    await hold(3000);
+    for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, 250); await hold(1200); }
+    await hold(1500);
     await scrollTop();
 
     await click(page.getByRole("tab", { name: "Approve" }), 1500);
     const fb = page.getByTestId("feedback-card");
     await mark("feedback", { card: fb });
-    await hold(1500);
-    await click(fb.locator("label", { has: page.getByLabel("4 out of 5") }), 500);
-    await type(fb.getByLabel("What worked well?"), "Seeing the source page next to each value.", 30);
-    await type(fb.getByLabel("What was difficult?"), "Checking handwritten names against the sheet.", 30);
-    await click(fb.getByText("Minor corrections", { exact: true }), 400);
-    await click(fb.getByText("Some", { exact: true }), 400);
-    await click(fb.getByText("Yes", { exact: true }), 600);
+    await moveTo(fb.getByText("How was your experience?"));
+    await hold(3000);
+    await click(fb.locator("label", { has: page.getByLabel("4 out of 5") }), 900);
+    await type(fb.getByLabel("What worked well?"), "Seeing the source page next to each value.", 45);
+    await hold(600);
+    await type(fb.getByLabel("What was difficult?"), "Checking handwritten names against the sheet.", 45);
+    await hold(600);
+    await click(fb.getByText("Minor corrections", { exact: true }), 900);
+    await click(fb.getByText("Some", { exact: true }), 900);
+    await click(fb.getByText("Yes", { exact: true }), 1200);
     await mark("feedback-filled", { card: fb });
     await click(fb.getByRole("button", { name: "Submit feedback" }), 0);
     await fb.getByText(/your feedback was recorded/).waitFor({ timeout: 30_000 });
     await mark("feedback-saved", { card: fb });
-    await hold(2500);
+    await hold(3500);
     await cdp.send("Page.stopScreencast");
     await mark("end");
     await ctx.close();

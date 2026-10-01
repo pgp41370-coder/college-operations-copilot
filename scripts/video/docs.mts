@@ -17,7 +17,8 @@ let n = `# Product video — narration
 
 Generated from \`scripts/video/script.ts\`. Edit that file, then run \`npx tsx scripts/video/docs.mts\`.
 
-- **Voice:** macOS Indian English voice (default \`Aman\`, alternative \`Tara\`), rate 190. Set \`VIDEO_VOICE\` / \`VIDEO_RATE\` to change.
+- **Voice:** macOS Indian English voice (default \`Aman\`, alternative \`Tara\`), rate 160, with pauses between sentences. Set \`VIDEO_VOICE\` / \`VIDEO_RATE\` to change.
+- **Audience:** teachers. Plain words, no technical terms, every screen explained. Captions are shown on screen.
 - **Labels:** each scene is marked CONTEXT, CURRENT PRODUCT, FUTURE ROADMAP or PILOT. Only CURRENT PRODUCT scenes describe what the deployed app does today.
 - **Order:** the live demo is split around the conflict and attendance scenes (5A → 6 → 7 → 5B) so the recording follows the real workflow order.
 
@@ -40,11 +41,11 @@ Generated from \`scripts/video/script.ts\`.
 
 ## Storyboard
 
-| # | Scene | Label | Planned | Visual |
+| # | Scene | Label | On-screen step | Visual |
 |---|---|---|---|---|
 `;
 SCENES.forEach((sc, i) => {
-  s += `| ${i + 1} | ${sc.title} | ${sc.status} | ${sc.target} s | ${sc.visual.replace(/\|/g, "/")} |\n`;
+  s += `| ${i + 1} | ${sc.title} | ${sc.status} | ${sc.step ?? "—"} | ${sc.visual.replace(/\|/g, "/")} |\n`;
 });
 s += `\n## Shot list\n\n`;
 SCENES.forEach((sc, i) => {

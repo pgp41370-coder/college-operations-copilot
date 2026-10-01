@@ -1,6 +1,6 @@
 # Product video
 
-A founder-style product walkthrough of College Operations Copilot: the problem, the product, a live demo on the deployed app, the planned agent roadmap, and the pilot.
+A step-by-step walkthrough of College Operations Copilot for teachers (about 9½ minutes): the problem, how the app works in four parts, twelve numbered steps on the deployed app, a recap, the planned roadmap and the pilot. Plain language, a calm pace, and captions on screen throughout.
 
 ## Deliverables
 
@@ -31,7 +31,7 @@ Footage is never staged: every demo frame is a frame of the production recording
 
 ## Voice
 
-macOS `say` with the Indian English voice **Aman** at 190 words per minute (`VIDEO_VOICE`, `VIDEO_RATE` to change; `Tara` is the alternative). Each line is rendered three times and the median-length take is kept, because the engine occasionally renders a line far too slowly. For a more natural voice, download an Enhanced or Premium Indian English voice in System Settings → Accessibility → Spoken Content, set `VIDEO_VOICE` to it, and rebuild. A human voice-over can replace the audio track using the `.srt` timings.
+macOS `say` with the Indian English voice **Aman** at 160 words per minute, with pauses between sentences (`VIDEO_VOICE`, `VIDEO_RATE` to change; `Tara` is the alternative). Each line is rendered three times and the median-length take is kept (empty or truncated takes are discarded), because the engine occasionally renders a line far too slowly or not at all. For a more natural voice, download an Enhanced or Premium Indian English voice in System Settings → Accessibility → Spoken Content, set `VIDEO_VOICE` to it, and rebuild. A human voice-over can replace the audio track using the `.srt` timings.
 
 ## Claims check
 

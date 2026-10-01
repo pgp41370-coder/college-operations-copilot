@@ -4,114 +4,171 @@ Generated from `scripts/video/script.ts`.
 
 ## Storyboard
 
-| # | Scene | Label | Planned | Visual |
+| # | Scene | Label | On-screen step | Visual |
 |---|---|---|---|---|
-| 1 | The problem | CONTEXT | 25 s | Synthetic evidence documents appear one by one in a flow: poster → notice → attendance sheet → photos → activity report → approval → final documentation. Then four short issue labels. |
-| 2 | The core question | CONTEXT | 15 s | Dark slate. The question types in, centred. |
-| 3 | Introducing the product | CURRENT PRODUCT | 15 s | Product name and subtitle over a soft indigo gradient; a screenshot of the real dashboard slides in behind. |
-| 4 | Current architecture | CURRENT PRODUCT | 28 s | Animated pipeline of the implemented system, each stage lighting up as it is mentioned: Evidence → Ingestion → OCR / extraction → Provenance → Validation → Conflict detection → Human review → Report generation → Approval → Export. Ends on the principle strip. |
-| 5 | Live demo — sign in, create, upload, provenance | CURRENT PRODUCT | 52 s | Screen recording of the deployed app (college-operations-copilot.vercel.app) with a demo faculty account and synthetic documents. Callouts on key UI regions. |
-| 6 | The date conflict | CURRENT PRODUCT | 30 s | Zoom into the real conflict card: four source values side by side. Callouts: “Conflict detected”, “Source: Poster”, “Source: Notice”, “Human review required”. Then the reviewer chooses a value. |
-| 7 | Attendance verification | CURRENT PRODUCT | 24 s | Attendance tab: OCR rows marked “Needs verification”, the reconciliation bars (8 stated vs 7 rows), adding the missing row, verifying, “Reconciled”. Then a small flow: Extracted → Needs review → Human verification → Verified. |
-| 8 | Live demo — reports, approval, export | CURRENT PRODUCT | 26 s | Reports tab: generate, preview the Activity Report; Approve tab: readiness checklist, Approve; downloads; audit timeline. |
-| 9 | The result | CURRENT PRODUCT | 14 s | Four-step flow: Documents → Structured evidence → Validated information → Approved report. |
-| 10 | Future agentic system | FUTURE ROADMAP | 42 s | Persistent “FUTURE ROADMAP — not built yet” label. Agent diagram builds top-down: Orchestrator → Document / Validation / Reconciliation agents → Report agent → Follow-up agent → Faculty approval. |
-| 11 | The pilot | PILOT | 20 s | Pilot loop: Faculty → Use product → Complete activity → Give feedback → Identify friction → Improve product → Repeat. |
-| 12 | Feedback in the product | CURRENT PRODUCT | 26 s | Screen recording: the feedback card on an approved activity (rating, what worked, what was difficult, corrections, manual work, would use again) and the administrator’s Pilot page. |
-| 13 | Closing | CONTEXT | 16 s | Product name, tagline, then three rows: Current — Evidence-grounded workflow; Next — Agentic college operations (roadmap); Pilot — Learn → Improve → Scale. |
+| 1 | The problem | CONTEXT | — | The documents of one activity appear one by one: poster, notice, attendance sheet, photographs, activity report, approval, final record. Then four short problems. |
+| 2 | What we wanted | CONTEXT | — | Calm title card. The question appears: “Can a computer do the repetitive work — without ever making up facts?” |
+| 3 | Introducing the app | CURRENT PRODUCT | — | Product name and a screenshot of the real dashboard. |
+| 4 | How it works, in four parts | CURRENT PRODUCT | — | Four large cards light up in turn: 1 You upload · 2 The app reads and fills in · 3 You check and decide · 4 You approve and download. Then a note: missing details are marked “Not provided”. |
+| 5 | Sign in | CURRENT PRODUCT | Step 1 of 12 · Sign in | Live recording: the sign-in page; a demo teacher account signs in. |
+| 6 | Your dashboard | CURRENT PRODUCT | Step 2 of 12 · Your dashboard | Dashboard: activity counts, what needs attention, Create Activity. |
+| 7 | Create the activity | CURRENT PRODUCT | Step 3 of 12 · Create the activity | Create Activity page: the seven-step progress bar, the form, the department's report format, the button to continue. |
+| 8 | Upload your documents | CURRENT PRODUCT | Step 4 of 12 · Upload your documents | Evidence tab: choosing the document type, uploading five files, each file's progress, then the list of documents. |
+| 9 | See the summary | CURRENT PRODUCT | Step 5 of 12 · See the summary | Overview tab: the coloured summary of every detail, with a colour key, and the list of what still needs attention. |
+| 10 | Check each detail | CURRENT PRODUCT | Step 6 of 12 · Check each detail | Review tab: a detail with its source; Preview source opens the original page beside the text; a 'Needs review' detail is confirmed. |
+| 11 | When documents disagree | CURRENT PRODUCT | Step 6 of 12 · When documents disagree | Zoom on the Date of Activity: four values side by side, the poster's date in red. The teacher chooses the correct one. |
+| 12 | Check the attendance | CURRENT PRODUCT | Step 7 of 12 · Check the attendance | Attendance tab: names read from the sheet marked 'Needs verification'; the counts compared (8 stated, 7 names); adding the missing name; marking all rows verified; 'Reconciled'. |
+| 13 | Create the reports | CURRENT PRODUCT | Step 8 of 12 · Create the reports | Reports tab: Generate reports; the three reports; the Activity Report preview with a “Not provided” detail; the Detailed Report and the Attendance Summary. |
+| 14 | Approve | CURRENT PRODUCT | Step 9 of 12 · Approve | Approve tab: the checklist all green; Approve; approved and locked, with the teacher's name and time. |
+| 15 | Download and print | CURRENT PRODUCT | Step 10 of 12 · Download and print | Reports tab after approval: Word and PDF downloads, the complete packet. |
+| 16 | History | CURRENT PRODUCT | Step 11 of 12 · History | Audit tab: the timeline of everything that happened. |
+| 17 | Tell us what you think | CURRENT PRODUCT | Step 12 of 12 · Tell us what you think | Feedback form on the approved activity, filled in and saved; then the administrator's Pilot page (counts only). |
+| 18 | Recap | CURRENT PRODUCT | — | Four steps in a row: You upload → The app fills in, with sources → You check and decide → You approve and download. |
+| 19 | What we plan next | FUTURE ROADMAP | — | “Future roadmap · not built yet”. Planned helpers appear one by one, with faculty approval at the end. |
+| 20 | The pilot | PILOT | — | Planned pilot: Mechanical Engineering, KDK College of Engineering, Nagpur. A loop: teachers use the app → finish an activity → give feedback → we find what is difficult → improve → repeat. |
+| 21 | Closing | CONTEXT | — | Product name, tagline, and three rows: Today / Next (not built yet) / Pilot. |
 
 ## Shot list
 
 ### 1. The problem
 
-- Poster card
-- Notice card
-- Handwritten attendance sheet card
-- Photo card
-- Activity report card
-- Approval stamp card
-- Issue labels: scattered · conflicting · handwritten · copied by hand
+- Poster
+- Notice
+- Attendance sheet
+- Photographs
+- Activity report
+- Approval
+- Final record
+- Four problems: scattered · may disagree · handwritten · copied by hand
 
-### 2. The core question
+### 2. What we wanted
 
-- Question on screen: “How can we automate the repetitive work without allowing AI to invent institutional facts?”
+- Question card
 
-### 3. Introducing the product
+### 3. Introducing the app
 
-- Title: COLLEGE OPERATIONS COPILOT
-- Subtitle: Evidence-grounded automation for institutional operations
-- Real dashboard screenshot
+- College Operations Copilot
+- Real dashboard
 
-### 4. Current architecture
+### 4. How it works, in four parts
 
-- Pipeline diagram (current system)
-- Principle strip: AI assists · Evidence supports · Validation checks · Humans approve
+- Four-part diagram
+- “Not provided” note
 
-### 5. Live demo — sign in, create, upload, provenance
+### 5. Sign in
 
-- Login (demo faculty account)
-- Dashboard (real counts)
-- Create activity (blank)
-- Upload notice, scanned report, poster, attendance sheet, photo — stage progress
-- Overview: trust summary
-- Review: value with source badge, rule and confidence
-- Preview source drawer
+- Sign-in page
+- Typing email and password
+- Sign in
 
-### 6. The date conflict
+### 6. Your dashboard
 
-- Conflict card (Date of Activity)
-- Candidate 31/10/2026 — Poster
-- Candidate 06/11/2026 — Notice / report / attendance sheet
-- Approval blocked
-- Reviewer chooses — recorded in audit
+- Activity counts
+- Needs attention
+- Create Activity button
 
-### 7. Attendance verification
+### 7. Create the activity
 
-- OCR draft rows — Needs verification
-- Counts differ: stated 8, rows 7
-- Add missing row
-- Mark rows verified (confirmation)
-- Reconciled
+- Seven-step progress bar
+- Optional details form
+- Create and continue
 
-### 8. Live demo — reports, approval, export
+### 8. Upload your documents
+
+- Document type
+- Upload box
+- Notice
+- Scanned report
+- Poster
+- Attendance sheet
+- Photograph
+- Documents list
+
+### 9. See the summary
+
+- Coloured summary
+- Colour key
+- What needs attention
+
+### 10. Check each detail
+
+- Category: Technical, from the scanned report, page 1
+- Preview source
+- Needs review → Confirm
+
+### 11. When documents disagree
+
+- Documents disagree
+- Poster: 31/10/2026
+- Notice, report, attendance sheet: 06/11/2026
+- Teacher chooses
+- Choice recorded
+
+### 12. Check the attendance
+
+- Names marked Needs verification
+- Counts differ: 8 and 7
+- Add the missing name
+- Mark all rows verified
+- Numbers match
+
+### 13. Create the reports
 
 - Generate reports
-- Report preview with document details
-- Approval checklist → Approve
-- Exports (DOCX, PDF, packet)
-- Audit timeline
+- Three report cards
+- Activity Report preview
+- “Not provided”
+- Detailed Report
+- Attendance Summary
+- Draft label
 
-### 9. The result
+### 14. Approve
 
-- Flow: Documents → Structured evidence → Validated information → Approved report
+- Checklist
+- Approve button
+- Approved and locked
 
-### 10. Future agentic system
+### 15. Download and print
 
-- FUTURE ROADMAP label
-- Orchestrator
-- Document agent
-- Validation agent
-- Reconciliation agent
-- Report agent
-- Follow-up agent
-- Faculty approval (human)
+- Word file
+- PDF
+- Complete packet
 
-### 11. The pilot
+### 16. History
 
-- Pilot (planned): Mechanical Engineering, KDK College of Engineering, Nagpur
-- Loop diagram
+- History timeline
 
-### 12. Feedback in the product
+### 17. Tell us what you think
 
-- Feedback card after approval
-- Submitted
-- Pilot page: metrics from the database + responses
+- Feedback form
+- Saved
+- Administrator's Pilot page
 
-### 13. Closing
+### 18. Recap
 
-- COLLEGE OPERATIONS COPILOT
-- From scattered evidence to validated institutional documentation.
-- Current / Next / Pilot rows
+- Recap flow
+
+### 19. What we plan next
+
+- Built today
+- Coordinator (planned)
+- Document helper
+- Checking helper
+- Disagreement helper
+- Report helper
+- Follow-up helper
+- Teacher approval
+
+### 20. The pilot
+
+- Pilot (planned)
+- Learning loop
+
+### 21. Closing
+
+- College Operations Copilot
+- From scattered documents to an approved report — with the teacher in control.
+- Today / Next / Pilot
 
 ## Screen recording plan
 
