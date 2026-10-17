@@ -98,3 +98,36 @@ describe("intake agent: documents and missing kinds", () => {
     expect(missingMessage([])).toBeNull();
   });
 });
+
+describe("extraction agent: which fields each document is asked for", () => {
+  it("asks a document only for fields its kind can state; never asks photos", async () => {
+    const { fieldsForKind } = await import("@/lib/agents/extraction");
+    const keys = (k: Parameters<typeof fieldsForKind>[1]) => fieldsForKind(DEF, k).map((f) => f.key);
+    expect(keys("notice")).toContain("notice_date");
+    expect(keys("poster")).not.toContain("notice_date");
+    expect(keys("poster")).not.toContain("total_count");
+    expect(keys("attendance")).toContain("total_count");
+    expect(keys("detailed_report")).toContain("report_date");
+    expect(keys("activity_report")).not.toContain("report_date");
+    expect(keys("photo")).toEqual([]);
+    // fields without a restriction (e.g. the activity date) are asked of every document
+    expect(keys("poster")).toContain("activity_date");
+  });
+});
+
+describe("extraction agent: narrative fields", () => {
+  it("takes the quoted passage as the value, and only if the passage is on the page", async () => {
+    const { OpenAICompatibleProvider } = await import("@/lib/ai/provider");
+    const text = "The quiz began with a short talk. Teams of three answered forty questions on basic science.";
+    const reply = (items: unknown[]) => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ items }) } }] }));
+    const fetchImpl = (async (_url: string, init: { body: string }) =>
+      reply(JSON.parse(init.body).messages[0].content.includes("exact passage")
+        ? [{ field: "event_description", quote: "Teams of three answered forty questions on basic science.", page: 1 },
+           { field: "impact_analysis", quote: "Students loved the quiz and asked for more.", page: 1 }]
+        : [])) as unknown as typeof fetch;
+    const p = new OpenAICompatibleProvider("http://llm.invalid/v1", "test-model", undefined, fetchImpl);
+    const r = await p.extractFields([{ ...page(text), kind: "detailed_report" }], DEF);
+    expect(r.candidates.map((c) => [c.fieldKey, c.value])).toEqual([["event_description", "Teams of three answered forty questions on basic science."]]);
+    expect(r.rejected).toEqual([{ field: "impact_analysis", reason: "quote not found in page text" }]);
+  });
+});

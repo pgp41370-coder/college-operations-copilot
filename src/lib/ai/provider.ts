@@ -13,12 +13,13 @@
  * method "llm", capped below the confidence threshold, and therefore always
  * require reviewer confirmation. Report narrative is never written by a model.
  */
+import { fieldsForKind } from "../agents/extraction";
 import { extractCandidates } from "../extraction/parser";
 import type { FieldCandidate, PageText } from "../extraction/types";
 import { findDates, findTimes, normalizeText, normalizeValue, textKey } from "../normalize";
 import { assessReadiness, type ReadinessInput } from "../readiness";
 import { buildActivityReport, buildDetailedReport, type FieldMap } from "../reports/build";
-import type { TemplateDefinition } from "../templates/schema";
+import type { TemplateDefinition, TemplateField } from "../templates/schema";
 
 export interface ExtractionResult {
   candidates: FieldCandidate[];
@@ -145,26 +146,55 @@ export class OpenAICompatibleProvider extends DeterministicProvider {
     this.label = `LLM-assisted extraction (${model}, OpenAI-compatible endpoint)`;
   }
 
+  /**
+   * `pages` are the pages of one uploaded document; it is only asked for the fields its kind can state.
+   * Short facts (dates, times, numbers, names) and long narrative fields go in separate requests: a
+   * smaller request is answered faster and skips fewer fields. Narrative fields are only requested
+   * when the rules found none, and come back as the verbatim passage only (the passage is the value).
+   */
   async extractFields(pages: PageText[], def: TemplateDefinition): Promise<ExtractionResult> {
-    const fields = def.fields.map((f) => `${f.key} (${f.type}): ${f.label}`).join("\n");
-    const docs = pages.map((p) => `--- page ${p.page} (${p.kind}) ---\n${p.text.slice(0, 12000)}`).join("\n");
-    const prompt = `Extract field values from the document text below.
-Rules: Only report a value that is explicitly written in the text. Do not infer, guess, summarise or complete missing information.
-For every value, copy the exact supporting text as "quote" and give the page number.
-Return JSON: {"items":[{"field":"<key>","value":"<value>","quote":"<exact text>","page":<n>}]}. Omit fields that are not stated.
-Fields:\n${fields}\n\nDocument:\n${docs}`;
-    const answer = (await chatJson({ baseUrl: this.baseUrl, model: this.model, apiKey: this.apiKey, fetchImpl: this.fetchImpl }, prompt)) as {
-      items?: { field: string; value: string; quote: string; page: number }[];
-    };
-    const items = answer.items ?? [];
+    const asked = pages.length ? fieldsForKind(def, pages[0].kind) : [];
     const out: ExtractionResult = { candidates: [], rejected: [] };
-    for (const item of Array.isArray(items) ? items.slice(0, 200) : []) {
-      if (typeof item?.value !== "string" || typeof item?.quote !== "string") continue;
-      const g = groundLlmValue(item, pages, def);
-      if (g.ok) out.candidates.push(g.candidate);
-      else out.rejected.push({ field: String(item.field), reason: g.reason });
+    // Narrative passages are long to write out (~10 tokens/s on a laptop model): ask for them only
+    // when the rules found nothing. Short facts are always asked, as an independent check.
+    const ruleKeys = new Set(extractCandidates(pages, def).map((c) => c.fieldKey));
+    const short = asked.filter((f) => f.type !== "longtext");
+    const long = asked.filter((f) => f.type === "longtext" && !ruleKeys.has(f.key));
+    for (const [group, isLong] of [[short, false], [long, true]] as const) {
+      if (!group.length) continue;
+      const askedKeys = new Set(group.map((f) => f.key));
+      for (const item of await this.ask(pages, group, isLong)) {
+        if (typeof item?.quote !== "string") continue;
+        if (isLong && typeof item.value !== "string") item.value = item.quote;
+        if (typeof item.value !== "string") continue;
+        if (def.fields.some((f) => f.key === item.field) && !askedKeys.has(item.field)) {
+          out.rejected.push({ field: String(item.field), reason: "field not expected in this kind of document" });
+          continue;
+        }
+        const g = groundLlmValue(item as { field: string; value: string; quote: string; page: number }, pages, def);
+        if (g.ok) out.candidates.push(g.candidate);
+        else out.rejected.push({ field: String(item.field), reason: g.reason });
+      }
     }
     return out;
+  }
+
+  private async ask(pages: PageText[], fields: TemplateField[], long: boolean) {
+    const list = fields.map((f) => `${f.key} (${f.type}): ${f.label}`).join("\n");
+    const docs = pages.map((p) => `--- page ${p.page} (${p.kind}) ---\n${p.text.slice(0, 12000)}`).join("\n");
+    const shape = long
+      ? `For every field, copy the passage that states it, exactly as written, as "quote" and give the page number.
+Return JSON: {"items":[{"field":"<key>","quote":"<exact passage>","page":<n>}]}. Omit fields that are not stated.`
+      : `For every value, copy as "quote" the shortest exact text that contains it (at most 12 words) and give the page number. Check every field in the list.
+Return JSON: {"items":[{"field":"<key>","value":"<value>","quote":"<exact text>","page":<n>}]}. Omit fields that are not stated.`;
+    const prompt = `Extract field values from the document text below.
+Rules: Only report a value that is explicitly written in the text. Do not infer, guess, summarise or complete missing information.
+${shape}
+Fields:\n${list}\n\nDocument:\n${docs}`;
+    const answer = (await chatJson({ baseUrl: this.baseUrl, model: this.model, apiKey: this.apiKey, fetchImpl: this.fetchImpl }, prompt)) as {
+      items?: { field: string; value?: string; quote: string; page: number }[];
+    };
+    return Array.isArray(answer.items) ? answer.items.slice(0, 200) : [];
   }
 }
 

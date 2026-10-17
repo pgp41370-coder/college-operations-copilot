@@ -60,11 +60,30 @@ counts as invented.
 | Model only | 18/22 (16 + 2 flagged) | 3 (one packet's participant counts) | 1 (a notice date) | 0 |
 | Rules + model (as the app combines them) | 22/22 (19 + 3 flagged) | 0 | 0 | 0 |
 
+Speed-up runs (2026-10-18, same packets, same model):
+
+| Version | Model alone | Combined | Quote check rejected | Wrong-field values accepted | Median / document |
+|---|---|---|---|---|---|
+| Run 1: every document asked all 22 fields | 18/22 | 22/22 | 17 | 8 | 81 s |
+| Run 2: each document asked only fields its kind can state | 13/22 | 22/22 | 17 | 10 | 56 s |
+| **Run 3 (current):** run 2 + quotes ≤ 12 words + narrative only where the rules found none | 13/22 | 22/22 | 12 | 7 | **51 s** |
+
+What we learned:
+- Speed on a MacBook Air M1 is set by output length: the model reads ~70 tokens/s but writes
+  ~10 tokens/s. Shorter answers are the only lever; 51 s/document is still too slow to wait for,
+  so extraction should run as a background job after upload.
+- From run 2 on, the model skips the participant counts (both packets) and the notice dates, even
+  though they are asked. Asked for only the 3 counts, it finds them in ~18 s. Asking in groups of 5
+  fields did **not** fix this and was removed. Two packets are too few to tell whether the drop
+  from run 1 is the change or run-to-run variation.
+- Combined accuracy stayed 22/22 with 0 wrong and 0 invented in every run: the rules cover these
+  layouts, and every model error became a flagged conflict or was rejected.
+- No further prompt changes were made against these packets.
+
 - The quote check rejected 17 of 64 model values (quote not on the page, or value not in the quote).
 - 8 accepted model values were still wrong for their field: the quote was real, but it belonged to a
   different field (e.g. a date that is not the notice date). The quote check cannot catch this. In
   the combined run these surface as conflicts for a person, not as wrong values — one field
   (a notice date) became a flagged conflict because of it.
-- Median 81 s per document on a MacBook Air M1 (11 documents): too slow to run interactively.
 - On these packets the model adds nothing over the rules. Whether it helps on layouts the rules
   have never seen is **untested** — that needs held-out packets.

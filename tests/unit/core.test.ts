@@ -326,7 +326,8 @@ describe("LLM grounding (optional adapter)", () => {
     const p = new OpenAICompatibleProvider("http://llm.invalid/v1", "test-model", undefined, fakeFetch);
     const r = await p.extractFields(pages, DEF);
     expect(r.candidates.map((c) => c.fieldKey)).toEqual(["venue"]);
-    expect(r.rejected).toEqual([{ field: "total_count", reason: "quote not found in page text" }]);
+    // a notice cannot state participant counts, so that answer is rejected before the quote check
+    expect(r.rejected).toEqual([{ field: "total_count", reason: "field not expected in this kind of document" }]);
   });
   it("defaults to the deterministic provider when nothing is configured", async () => {
     const { getProvider } = await import("@/lib/ai/provider");
