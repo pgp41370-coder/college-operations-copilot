@@ -1,6 +1,6 @@
 # Agent pipeline plan
 
-Status: **steps 1 (Intake) and 2 (Extraction) built and scored on the reference packets; steps 3–5 not started.**
+Status: **steps 1–3 (Intake, Extraction, Validation) built and scored on the reference packets; steps 4–5 not started.**
 
 The product works without any AI model. Agents are added on top of the existing
 rule-based steps. The same guardrails apply to every agent:
@@ -19,7 +19,7 @@ rule-based steps. The same guardrails apply to every agent:
 |---|---|---|---|---|
 | 1 | Intake | Suggest each upload's document kind; list packet documents still missing | template `packet.sections` | **Built** — `src/lib/agents/intake.ts` |
 | 2 | Extraction | Fill the 22 template fields, each with a verbatim quote + page | `OpenAICompatibleProvider.extractFields` (exists, off by default) | **Scored** — `scripts/agents/eval-extraction.ts` |
-| 3 | Validation | Explain cross-document conflicts (e.g. poster date vs notice date) with both sources; never pick a winner | `readiness.ts`, `reconciliation.ts` | Planned |
+| 3 | Validation | Explain cross-document conflicts with their sources; warn when a value's quote states a different field; never pick a winner | `readiness.ts`, `reconciliation.ts` | **Scored** — `src/lib/agents/validation.ts` (not yet shown in the app) |
 | 4 | Drafting | Draft narrative paragraphs only from approved fields, each sentence linked to its field | `reports/build.ts` | Planned |
 | 5 | Orchestrator | Run 1→4, keep per-activity state, route uncertain items to a person | — | Planned |
 
@@ -87,3 +87,19 @@ What we learned:
   (a notice date) became a flagged conflict because of it.
 - On these packets the model adds nothing over the rules. Whether it helps on layouts the rules
   have never seen is **untested** — that needs held-out packets.
+
+### Validation (step 3)
+
+`npx tsx scripts/agents/eval-validation.ts` checks every date/time/count candidate (rules +
+model) of the answer-key fields, then plants errors: real candidates re-filed under a different
+field of the same type (real quote, wrong field).
+
+| Run (2026-10-18, qwen2.5:7b) | Result |
+|---|---|
+| Conflict explanation (no model) | Both packets: "06/11 (notice, activity report, detailed report, 2 attendance pages) vs 31/10 (poster)" — correct |
+| Real candidates | 40, all correct (step 2's per-kind rule already removed the wrong-field values); agent wrongly warned on **5/40** (12.5%) |
+| Planted wrong-field values | 20: agent warned on **7** (35%) |
+| Planted, step 2 rule + agent | **15/20** (75%): the per-kind rule alone stops the 8 planted notice dates taken from posters, reports and attendance sheets; the agent missed all 8 |
+
+Verdict: the conflict explanation is ready to show. The model's role check is too weak on a 7B
+local model to rely on — keep it as an advisory warning at most, or re-test with a stronger model.
