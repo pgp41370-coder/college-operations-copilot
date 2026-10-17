@@ -125,6 +125,7 @@ function FieldCard({ field, bundle, locked, refresh, attention, onPreview }: { f
   const editor = row?.edited_by ? (bundle.editors[row.edited_by] ?? "a reviewer") : null;
   const distinct = new Set(cands.map((c) => c.normalized)).size;
   const conflict = status === "conflicting";
+  const explanation = bundle.agents.conflicts.find((c) => c.field === field.key);
 
   const call = async (body: Record<string, unknown>) => {
     setBusy(true);
@@ -251,6 +252,11 @@ function FieldCard({ field, bundle, locked, refresh, attention, onPreview }: { f
               <GitCompareArrows className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <span>
                 <strong className="font-semibold">Documents contain different values for {field.label}.</strong> Choose the correct one, or enter it manually. The system will not pick one for you.
+                {explanation && (
+                  <span className="mt-1 block text-[12.5px]" data-testid="conflict-explanation">
+                    {explanation.groups.map((g) => `${display(g.value)} — ${g.sources.map((x) => `${SOURCE_KIND_LABELS[x.kind]} p.${x.page}`).join(", ")}`).join("  ·  ")}
+                  </span>
+                )}
               </span>
             </div>
           )}

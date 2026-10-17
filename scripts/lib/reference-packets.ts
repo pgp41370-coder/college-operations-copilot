@@ -6,7 +6,7 @@
  * Each packet is a single compiled PDF. The page -> document-kind mapping
  * below was read by a person from the packets themselves.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { extractLocal, toolsAvailable } from "./node-ocr";
 import type { PageText } from "../../src/lib/extraction/types";
@@ -16,6 +16,10 @@ export interface ReferencePacket {
   id: string;
   file: string;
   pages: Record<number, SourceKind | null>;
+  /** True for packets never used while writing rules or prompts (from reference-data/held-out.json). */
+  heldOut?: boolean;
+  /** Field values a person read from the packet (see docs/HELD_OUT_PACKETS.md for the format). */
+  answers?: Record<string, { equals: string } | { includes: string } | { missing: true } | { date: string; conflictWith: string }>;
 }
 
 export const REFERENCE_DIR = path.join(process.cwd(), "reference-data");
@@ -32,6 +36,22 @@ export const PACKETS: ReferencePacket[] = [
     pages: { 1: "poster", 2: "notice", 3: "activity_report", 4: "detailed_report", 5: "attendance", 6: "attendance", 7: "photo", 8: null },
   },
 ];
+
+/**
+ * Held-out packets listed by a person in reference-data/held-out.json (git-ignored).
+ * Format and labelling instructions: docs/HELD_OUT_PACKETS.md.
+ */
+export function heldOutPackets(): ReferencePacket[] {
+  const file = path.join(REFERENCE_DIR, "held-out.json");
+  if (!existsSync(file)) return [];
+  const list = JSON.parse(readFileSync(file, "utf8")) as ReferencePacket[];
+  return list.filter((p) => existsSync(path.join(REFERENCE_DIR, p.file))).map((p) => ({ ...p, heldOut: true }));
+}
+
+/** The two original packets plus any held-out packets. */
+export function allPackets(): ReferencePacket[] {
+  return [...PACKETS, ...heldOutPackets()];
+}
 
 export function referenceAvailable(): boolean {
   return toolsAvailable() && PACKETS.every((p) => existsSync(path.join(REFERENCE_DIR, p.file)));

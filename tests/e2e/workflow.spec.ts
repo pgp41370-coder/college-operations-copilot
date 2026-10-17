@@ -104,6 +104,21 @@ test.describe.serial("activity documentation workflow", () => {
     const date = page.getByTestId("field-activity_date");
     await expect(date).toContainText("Conflict — review required");
     await expect(page.getByText("Documents contain different values for Date of Activity")).toBeVisible();
+    // Validation agent: the conflict is explained by source
+    await expect(page.getByTestId("conflict-explanation")).toContainText("Existing activity report p.1");
+    await expect(page.getByTestId("conflict-explanation")).toContainText("Notice p.1");
+  });
+
+  test("agents: type check, missing documents and a rules-only agent run", async ({ page }) => {
+    await login(page, users()[0]);
+    await page.goto(`${activityUrl}?tab=evidence`);
+    await expect(page.getByText("Missing for the activity packet: Poster, Attendance sheet")).toBeVisible();
+    await expect(page.getByTestId("source-card").filter({ hasText: "notice.pdf" }).getByTestId("type-check")).toContainText("content matches “Notice”");
+    await page.goto(`${activityUrl}?tab=overview`);
+    await page.getByRole("button", { name: "Run agent check" }).click();
+    await expect(page.getByText("1 · Intake — document types & missing documents")).toBeVisible();
+    await expect(page.getByText("Skipped: no AI model is connected to this deployment.").first()).toBeVisible();
+    await expect(page.getByText(/1 conflict\(s\) explained/)).toBeVisible();
   });
 
   test("reviewer resolves the conflict, checks attendance, generates and approves", async ({ page }) => {

@@ -18,7 +18,7 @@ import path from "node:path";
 import { chatConfig } from "../../src/lib/ai/provider";
 import { missingKinds, runIntake } from "../../src/lib/agents/intake";
 import { KDK_MECH_V1 } from "../../src/lib/templates/kdk-mech-v1";
-import { PACKETS, packetPages, referenceAvailable } from "../lib/reference-packets";
+import { allPackets, PACKETS, packetPages, referenceAvailable } from "../lib/reference-packets";
 
 async function main() {
   if (!referenceAvailable()) {
@@ -27,13 +27,13 @@ async function main() {
   }
   const cfg = chatConfig();
   console.log(`Model: ${cfg ? `${cfg.model} @ ${cfg.baseUrl}` : "none (rules only)"}\n`);
-  const rows: { packet: string; page: number; truth: string; rules: string; llm: string | null; final: string; needsReview: boolean; ms: number }[] = [];
-  for (const packet of PACKETS) {
+  const rows: { packet: string; heldOut: boolean; page: number; truth: string; rules: string; llm: string | null; final: string; needsReview: boolean; ms: number }[] = [];
+  for (const packet of allPackets()) {
     for (const page of packetPages(packet)) {
       const t0 = Date.now();
       const r = await runIntake(page, cfg);
       const llm = r.llm == null ? null : "rejected" in r.llm ? `rejected: ${r.llm.rejected}` : r.llm.kind;
-      rows.push({ packet: packet.id, page: page.page, truth: page.kind, rules: r.rules.kind, llm, final: r.suggestion.kind, needsReview: r.needsReview, ms: Date.now() - t0 });
+      rows.push({ packet: packet.id, heldOut: !!packet.heldOut, page: page.page, truth: page.kind, rules: r.rules.kind, llm, final: r.suggestion.kind, needsReview: r.needsReview, ms: Date.now() - t0 });
       const mark = (k: string | null) => (k === page.kind ? "✓" : "✗");
       console.log(
         `${packet.id.padEnd(6)} p${String(page.page).padEnd(3)} truth ${page.kind.padEnd(16)} rules ${r.rules.kind.padEnd(16)}${mark(r.rules.kind)}` +
@@ -54,6 +54,13 @@ async function main() {
     console.log(`Flagged for review: ${flagged.length}/${n}; wrong and NOT flagged: ${wrongUnflagged}`);
     console.log(`Median time per page: ${rows.map((r) => r.ms).sort((a, b) => a - b)[Math.floor(n / 2)]} ms`);
   }
+
+  const held = rows.filter((r) => r.heldOut);
+  if (held.length) {
+    const h = (k: number) => `${k}/${held.length} (${Math.round((100 * k) / held.length)}%)`;
+    console.log(`\nHELD-OUT pages (never used to write rules or prompts): ${held.length}`);
+    console.log(`  rules ${h(held.filter((r) => r.rules === r.truth).length)}` + (cfg ? `   llm ${h(held.filter((r) => r.llm === r.truth).length)}   final ${h(held.filter((r) => r.final === r.truth).length)}   wrong & not flagged ${held.filter((r) => r.final !== r.truth && !r.needsReview).length}` : ""));
+  } else console.log("\nNo held-out packets yet (reference-data/held-out.json) — every score above is in-sample.");
 
   // Missing-document check: each packet is complete; removing a kind must be reported.
   for (const packet of PACKETS) {

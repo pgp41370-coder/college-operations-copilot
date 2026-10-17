@@ -56,3 +56,44 @@ describe("validation agent: role check", () => {
     expect(isCheckable(field("venue"))).toBe(false);
   });
 });
+
+describe("drafting agent", () => {
+  const values = { title: "Science Quiz", activity_date: "2031-01-12", total_count: "30", venue: "Hall B" };
+  it("keeps sentences whose numbers, months and names come from the cited fields", async () => {
+    const { unsupported } = await import("@/lib/agents/drafting");
+    expect(unsupported({ text: "The Science Quiz was held on 12 January 2031 in Hall B.", uses: ["title", "activity_date", "venue"] }, values, "brief")).toBeNull();
+    expect(unsupported({ text: "In all, 30 students took part.", uses: ["total_count"] }, values, "brief")).toBeNull();
+  });
+  it("drops sentences with a detail that is not in the cited values", async () => {
+    const { unsupported } = await import("@/lib/agents/drafting");
+    expect(unsupported({ text: "In all, 45 students took part.", uses: ["total_count"] }, values, "brief")).toMatch(/number 45/);
+    expect(unsupported({ text: "It was held in February.", uses: ["activity_date"] }, values, "brief")).toMatch(/month february/);
+    expect(unsupported({ text: "The quiz was opened by Dr Mehta.", uses: ["title"] }, values, "brief")).toMatch(/is not in the provided values/);
+    expect(unsupported({ text: "The quiz was useful.", uses: [] }, values, "brief")).toBe("cites no field");
+    // a possessive of a provided name is not a new name
+    expect(unsupported({ text: "The Science Quiz's 30 seats were filled.", uses: ["title", "total_count"] }, values, "brief")).toBeNull();
+    expect(unsupported({ text: "The quiz was useful.", uses: ["outcomes"] }, values, "brief")).toMatch(/no value/);
+  });
+  it("never states a date the documents still disagree on", async () => {
+    const { mentionsDate, unsupported } = await import("@/lib/agents/drafting");
+    expect(mentionsDate("It was held on 12 January 2031.", "2031-01-12")).toBe(true);
+    expect(mentionsDate("It was held on January 12th, 2031.", "2031-01-12")).toBe(true);
+    expect(mentionsDate("It was held on 12/01/2031.", "2031-01-12")).toBe(true);
+    expect(mentionsDate("It was held on 13 January 2031.", "2031-01-12")).toBe(false);
+    const v = { ...values, report_date: "2031-01-12" };
+    expect(unsupported({ text: "The quiz was held on 12 January 2031.", uses: ["report_date"] }, v, "brief", ["2031-01-12", "2031-01-10"])).toMatch(/disagree/);
+  });
+  it("returns only supported sentences, and says what was removed", async () => {
+    const { draftNarrative } = await import("@/lib/agents/drafting");
+    const r = await draftNarrative(DEF, field("brief"), values, fakeChat({ sentences: [
+      { text: "The Science Quiz was held on 12 January 2031 in Hall B.", uses: ["title", "activity_date", "venue"] },
+      { text: "It was attended by 45 students.", uses: ["total_count"] },
+    ] }));
+    expect(r).toMatchObject({ field: "brief", text: "The Science Quiz was held on 12 January 2031 in Hall B." });
+    expect("sentences" in r && r.dropped.map((d) => d.reason)).toEqual(["number 45 is not in the cited values"]);
+  });
+  it("refuses to draft from too few details", async () => {
+    const { draftNarrative } = await import("@/lib/agents/drafting");
+    expect(await draftNarrative(DEF, field("brief"), { title: "Science Quiz" }, fakeChat({ sentences: [] }))).toEqual({ rejected: "not enough confirmed details to draft from" });
+  });
+});

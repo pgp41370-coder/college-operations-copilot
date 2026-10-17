@@ -22,7 +22,7 @@ import { extractCandidates } from "../../src/lib/extraction/parser";
 import type { FieldCandidate, PageText } from "../../src/lib/extraction/types";
 import { resolveField, type StoredCandidate } from "../../src/lib/fields/resolve";
 import { KDK_MECH_V1 as DEF } from "../../src/lib/templates/kdk-mech-v1";
-import { PACKETS, packetPages, referenceAvailable } from "../lib/reference-packets";
+import { allPackets, packetPages, referenceAvailable } from "../lib/reference-packets";
 
 type Expect = { equals: string } | { includes: string } | { missing: true } | { date: string; conflictWith: string };
 const COMMON: Record<string, Expect> = {
@@ -67,7 +67,9 @@ async function main() {
   const out: unknown[] = [];
   const llmStats = { accepted: 0, rejected: 0, wrongAccepted: 0, ms: [] as number[] };
 
-  for (const packet of PACKETS) {
+  const packets = allPackets().filter((p) => KEY[p.id] || p.answers);
+  for (const p of packets) if (p.answers) KEY[p.id] = p.answers;
+  for (const packet of packets) {
     const pages = packetPages(packet);
     const kindOf = new Map(pages.map((p) => [p.sourceId, p.kind]));
     const bySource = new Map<string, PageText[]>();
@@ -95,7 +97,7 @@ async function main() {
       } else llmStats.wrongAccepted += model.filter((m) => m.fieldKey === field).length;
 
       const def = DEF.fields.find((f) => f.key === field)!;
-      const row: Record<string, string> = { packet: packet.id, field };
+      const row: Record<string, string> = { packet: packet.id + (packet.heldOut ? " (held-out)" : ""), field };
       for (const [name, cands] of Object.entries(sets)) {
         const mine = cands.filter((c) => c.fieldKey === field).map((c, i) => stored(c, kindOf.get(c.sourceId)!, i));
         const r = resolveField(def, mine, undefined, DEF)!;

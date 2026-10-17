@@ -48,6 +48,7 @@ import {
   type StepState,
   type Tone,
 } from "@/components/ui";
+import { AgentsCard } from "./agents-card";
 import { AttendanceTab } from "./attendance-tab";
 import { EvidenceTab } from "./evidence-tab";
 import { ReportsTab } from "./reports-tab";
@@ -230,7 +231,8 @@ export function IssueList({ bundle, setTab }: { bundle: Bundle; setTab?: (t: str
 const TRUST_ORDER: TrustState[] = ["verified", "source_backed", "needs_review", "conflict", "missing"];
 const BAR: Record<TrustState, string> = { verified: "bg-success", source_backed: "bg-brand", needs_review: "bg-warning", conflict: "bg-danger", missing: "bg-line-strong" };
 
-function Overview({ bundle, setTab }: TabProps & { setTab: (t: string) => void }) {
+function Overview(props: TabProps & { setTab: (t: string) => void }) {
+  const { bundle, setTab } = props;
   const def = bundle.state.def;
   const rows = def.fields.map((f) => ({ f, row: bundle.state.fields.find((x) => x.field_key === f.key) }));
   const states = rows.map(({ row }) => trustState(row));
@@ -274,6 +276,8 @@ function Overview({ bundle, setTab }: TabProps & { setTab: (t: string) => void }
             <IssueList bundle={bundle} setTab={setTab} />
           </div>
         </Card>
+
+        <AgentsCard {...props} />
 
         <Card>
           <CardHeader icon={FileText} title="Key details" actions={<button className="btn btn-ghost btn-sm" onClick={() => setTab("review")}>Review all fields <ArrowRight className="h-3 w-3" aria-hidden /></button>} />

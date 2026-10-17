@@ -1,6 +1,6 @@
 # Agent pipeline plan
 
-Status: **steps 1–3 (Intake, Extraction, Validation) built and scored on the reference packets; steps 4–5 not started.**
+Status: **all five steps built.** Rule-based parts (document-type check, missing documents, conflict explanations, agent run) are in the app; model steps run only where a model is configured (locally via Ollama). Held-out packets: none yet — see `docs/HELD_OUT_PACKETS.md`.
 
 The product works without any AI model. Agents are added on top of the existing
 rule-based steps. The same guardrails apply to every agent:
@@ -20,8 +20,8 @@ rule-based steps. The same guardrails apply to every agent:
 | 1 | Intake | Suggest each upload's document kind; list packet documents still missing | template `packet.sections` | **Built** — `src/lib/agents/intake.ts` |
 | 2 | Extraction | Fill the 22 template fields, each with a verbatim quote + page | `OpenAICompatibleProvider.extractFields` (exists, off by default) | **Scored** — `scripts/agents/eval-extraction.ts` |
 | 3 | Validation | Explain cross-document conflicts with their sources; warn when a value's quote states a different field; never pick a winner | `readiness.ts`, `reconciliation.ts` | **Scored** — `src/lib/agents/validation.ts` (not yet shown in the app) |
-| 4 | Drafting | Draft narrative paragraphs only from approved fields, each sentence linked to its field | `reports/build.ts` | Planned |
-| 5 | Orchestrator | Run 1→4, keep per-activity state, route uncertain items to a person | — | Planned |
+| 4 | Drafting | Draft empty narrative fields only from current field values; each sentence cites its fields; unsupported numbers/months/names and disputed dates are removed | `reports/build.ts` | **Scored** — `src/lib/agents/drafting.ts` |
+| 5 | Orchestrator | Run 1→4 for an activity, skip model steps when no model is configured, audit each run, return items for review | — | **Built** — `src/lib/server/agents.ts`, "Agent check" card on the Overview tab |
 
 ## Evaluation
 
@@ -103,3 +103,20 @@ field of the same type (real quote, wrong field).
 
 Verdict: the conflict explanation is ready to show. The model's role check is too weak on a 7B
 local model to rely on — keep it as an advisory warning at most, or re-test with a stronger model.
+
+### Drafting (step 4)
+
+`npx tsx scripts/agents/eval-drafting.ts` drafts each of the 5 narrative fields per packet
+(10 drafts) from the rule-extracted values, as if that field were empty.
+
+| Run (2026-10-18, qwen2.5:7b) | Result |
+|---|---|
+| Drafts produced | 5 of 10 (5 refused: every sentence had an unsupported detail) |
+| Sentences kept / removed | 5 kept / 13 removed |
+| Removal reasons | 5 unknown words or names (e.g. the event renamed "…Competition", an abbreviation not in the documents); 5 stated the activity date the documents disagree on (poster 31/10 vs reports 06/11); 2 cited no field; 1 number not in the cited values |
+| Kept sentences, read by a person | 5/5 restate facts from the documents (event, department, purpose); none adds a number, name or date. Weakness: "outcomes"/"impact" drafts restate the objectives rather than describe outcomes — a reviewer must edit them. |
+| Speed | ~20 s per draft on a MacBook Air M1 |
+
+Fixes made while reading the drafts (both general, not packet-specific): a possessive ("…'s")
+of a provided name is not a new name; a draft may not state a date that is in an unresolved
+conflict (found because 2 kept sentences stated the disputed activity date via the report date).

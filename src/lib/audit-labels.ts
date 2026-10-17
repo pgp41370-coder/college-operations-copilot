@@ -27,6 +27,7 @@ export const AUDIT_LABELS: Record<string, string> = {
   "user.updated": "User updated",
   "account.password_changed": "Password changed",
   "ai.extraction": "LLM-assisted extraction",
+  "agents.run": "Agent check run",
   "feedback.submitted": "Pilot feedback submitted",
   "feedback.updated": "Pilot feedback updated",
 };

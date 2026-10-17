@@ -20,6 +20,7 @@ import {
 } from "../reports/build";
 import { SOURCE_KINDS, validateTemplateDefinition, type SourceKind, type TemplateDefinition } from "../templates/schema";
 import type { User } from "./auth-core";
+import { agentChecks } from "./agents";
 import { audit } from "./audit";
 import { AppError, notFound } from "./errors";
 import { MAX_SOURCES_PER_ACTIVITY, validateUpload } from "./files";
@@ -176,7 +177,7 @@ interface FieldRow {
   note: string | null;
 }
 
-async function loadCandidates(sql: Db, activityId: string): Promise<(StoredCandidate & { filename: string; rule: string; snippet: string | null })[]> {
+export async function loadCandidates(sql: Db, activityId: string): Promise<(StoredCandidate & { filename: string; rule: string; snippet: string | null })[]> {
   const rows = await sql<{ id: string; field_key: string; value: string; normalized: string; source_id: string; kind: SourceKind; filename: string; page: number; confidence: string; method: "deterministic_parser" | "llm"; rule: string; snippet: string | null }[]>`
     select c.id, c.field_key, c.value, c.normalized, c.source_id, s.kind, s.filename, c.page, c.confidence, c.method, c.rule, c.snippet
     from field_candidates c join sources s on s.id = c.source_id where c.activity_id = ${activityId}
@@ -936,6 +937,7 @@ export async function loadActivityBundle(sql: Db, user: User, activityId: string
     from sources s left join users u on u.id = s.uploaded_by where s.activity_id = ${activityId} order by s.uploaded_at`;
   const attendance = await listAttendance(sql, activityId);
   const reports = await latestReports(sql, activityId);
+  const agents = await agentChecks(sql, activityId, state.def, sources, candidates, state.fields);
   const [owner] = await sql<{ name: string }[]>`select name from users where id = ${activity.owner_id}`;
   const [approver] = activity.approved_by ? await sql<{ name: string }[]>`select name from users where id = ${activity.approved_by}` : [];
   const editors = await sql<{ id: string; name: string }[]>`
@@ -955,5 +957,6 @@ export async function loadActivityBundle(sql: Db, user: User, activityId: string
     reports,
     editors: Object.fromEntries(editors.map((e) => [e.id, e.name])),
     audit: auditRows,
+    agents,
   };
 }

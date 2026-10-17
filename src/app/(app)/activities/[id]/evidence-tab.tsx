@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { AlertOctagon, CheckCircle2, ExternalLink, Hash, RefreshCw, ScanText, ShieldAlert, Trash2, Upload } from "lucide-react";
+import { AlertOctagon, CheckCircle2, ExternalLink, FileSearch, Hash, RefreshCw, ScanText, ShieldAlert, Trash2, TriangleAlert, Upload } from "lucide-react";
 import { SOURCE_KINDS, SOURCE_KIND_LABELS, type SourceKind } from "@/lib/templates/schema";
 import { api, ApiError, errorText } from "@/components/client-api";
 import { Badge, Button, Card, CardHeader, cx, EmptyState, FileDropzone, FileIcon, fmtBytes, fmtDateTime, MethodBadge, Modal, Notice, PRIVACY_NOTICE, ProgressIndicator, type Tone } from "@/components/ui";
@@ -183,7 +183,13 @@ export function EvidenceTab({ bundle, locked, refresh }: TabProps) {
         </section>
       )}
 
-      <SourceList sources={docs} locked={locked} refresh={refresh} />
+      {!locked && docs.length > 0 && bundle.agents.missing.length > 0 && (
+        <Notice tone="warn" title={`Missing for the activity packet: ${bundle.agents.missing.map((k) => SOURCE_KIND_LABELS[k]).join(", ")}`}>
+          The template&apos;s packet includes {bundle.agents.missing.length === 1 ? "this document" : "these documents"}, but none has been uploaded yet. Upload {bundle.agents.missing.length === 1 ? "it" : "them"} if available.
+        </Notice>
+      )}
+
+      <SourceList sources={docs} checks={bundle.agents.intake} locked={locked} refresh={refresh} />
     </div>
   );
 }
@@ -196,7 +202,7 @@ const STATUS: Record<string, [string, Tone]> = {
   skipped: ["Evidence only", "neutral"],
 };
 
-function SourceList({ sources, locked, refresh }: { sources: Bundle["sources"]; locked: boolean; refresh: () => void }) {
+function SourceList({ sources, checks, locked, refresh }: { sources: Bundle["sources"]; checks: Bundle["agents"]["intake"]; locked: boolean; refresh: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tone: "error" | "info"; text: string } | null>(null);
   const [removing, setRemoving] = useState<Bundle["sources"][number] | null>(null);
@@ -268,6 +274,7 @@ function SourceList({ sources, locked, refresh }: { sources: Bundle["sources"]; 
                 {s.pages_extracted > 0 && <span className="t-meta flex items-center gap-1"><ScanText className="h-3 w-3" aria-hidden />{s.pages_extracted} page{s.pages_extracted === 1 ? "" : "s"} with text</span>}
                 {s.mean_confidence != null && (s.methods ?? []).includes("ocr") && <span className="t-meta">· mean OCR confidence {Number(s.mean_confidence).toFixed(0)}%</span>}
               </div>
+              <TypeCheck check={checks.find((c) => c.sourceId === s.id)} />
               {s.caption && <p className="mt-2 text-[12.5px] text-fg-2">Caption: {s.caption}</p>}
               {s.extraction_error && <p className="mt-2 text-[12.5px] text-danger">{s.extraction_error}</p>}
               <div className="t-meta mt-2 flex items-center gap-1" title={s.sha256}>
@@ -310,5 +317,25 @@ function SourceList({ sources, locked, refresh }: { sources: Bundle["sources"]; 
         </p>
       </Modal>
     </section>
+  );
+}
+
+/** Intake agent result for one document: a suggestion only — the uploaded type is never changed. */
+function TypeCheck({ check }: { check: Bundle["agents"]["intake"][number] | undefined }) {
+  if (!check) return null;
+  if (check.suggested === check.uploadedAs)
+    return (
+      <p className="t-meta mt-2 flex items-center gap-1" data-testid="type-check">
+        <FileSearch className="h-3 w-3" aria-hidden /> Type check: content matches “{SOURCE_KIND_LABELS[check.suggested]}”
+      </p>
+    );
+  return (
+    <p className="mt-2 flex items-start gap-1.5 rounded-md border border-warning-line bg-warning-soft px-2 py-1.5 text-[12.5px] text-warning" data-testid="type-check">
+      <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span>
+        Uploaded as “{SOURCE_KIND_LABELS[check.uploadedAs]}”, but the content looks like: <strong>{SOURCE_KIND_LABELS[check.suggested]}</strong>
+        {check.quote ? <> (“{check.quote.slice(0, 80)}”)</> : ` (${check.reason})`}. If so, remove it and upload it with the right type.
+      </span>
+    </p>
   );
 }
