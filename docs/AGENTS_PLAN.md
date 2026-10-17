@@ -1,0 +1,70 @@
+# Agent pipeline plan
+
+Status: **steps 1 (Intake) and 2 (Extraction) built and scored on the reference packets; steps 3–5 not started.**
+
+The product works without any AI model. Agents are added on top of the existing
+rule-based steps. The same guardrails apply to every agent:
+
+- an agent **suggests**, a faculty member **decides**: no agent approves, resolves a
+  conflict or changes a value on its own;
+- every model answer must be backed by **verbatim text from the uploaded documents**,
+  or it is discarded and the rule-based result stands;
+- when the model and the rules disagree, the item is **flagged for review**;
+- real college documents are only sent to a model running **on the local machine**
+  (Ollama), never to a hosted service, unless the institution has authorised it;
+- every agent is scored against the human-labelled reference packets before any
+  number is quoted.
+
+| # | Agent | Job | Builds on | Status |
+|---|---|---|---|---|
+| 1 | Intake | Suggest each upload's document kind; list packet documents still missing | template `packet.sections` | **Built** — `src/lib/agents/intake.ts` |
+| 2 | Extraction | Fill the 22 template fields, each with a verbatim quote + page | `OpenAICompatibleProvider.extractFields` (exists, off by default) | **Scored** — `scripts/agents/eval-extraction.ts` |
+| 3 | Validation | Explain cross-document conflicts (e.g. poster date vs notice date) with both sources; never pick a winner | `readiness.ts`, `reconciliation.ts` | Planned |
+| 4 | Drafting | Draft narrative paragraphs only from approved fields, each sentence linked to its field | `reports/build.ts` | Planned |
+| 5 | Orchestrator | Run 1→4, keep per-activity state, route uncertain items to a person | — | Planned |
+
+## Evaluation
+
+`npx tsx scripts/agents/eval-intake.ts` scores the Intake agent against the 18
+labelled pages of the two KDK reference packets (local only; prints kinds, never
+page text).
+
+| Run | Pages | Correct | Note |
+|---|---|---|---|
+| Rules only (2026-10-17) | 18 | 17 (94%) | **In-sample**: the rules were written while looking at these pages. One supporting page is read as a poster. |
+| Rules + qwen2.5:7b, run 1 (2026-10-17) | 18 | model 13 (72%), final 15 (83%) | 2 model quotes not found on the page (rejected). Detailed reports read as activity reports. 6 flagged for review; **0 wrong answers left unflagged**. |
+| Rules + qwen2.5:7b, run 2 (2026-10-17) | 18 | model 14 (78%), final 15 (83%) | Clearer form-vs-paragraph descriptions and a word-for-word quote rule. Still in-sample. 5 flagged; **0 wrong unflagged**. Median 7.2 s/page on a MacBook Air M1. |
+
+The final answer currently prefers the grounded model answer and flags any
+disagreement. The remaining model errors (detailed report read as an activity
+report; one supporting page read as an activity report) are all flagged, so a
+person sees them. No further prompt changes were made against these pages, to
+avoid fitting the prompt to the test set.
+
+Two packets from one department are too few for a fair score. Before quoting any
+accuracy, add held-out packets (other activities, other departments) that were
+labelled by a person and never used while writing the rules or prompts.
+
+### Extraction (step 2)
+
+`npx tsx scripts/agents/eval-extraction.ts` (needs the model env vars) scores 11
+fields per packet — 22 in all — against the values a person read from the
+printed reports (the answer key in `tests/reference/kdk-cases.test.ts`). For the
+activity date the reports and posters disagree, so flagging the conflict counts
+as correct; for the invited speaker the reports print only dashes, so any value
+counts as invented.
+
+| Run (2026-10-17, qwen2.5:7b, local) | Correct | Missed | Wrong | Invented |
+|---|---|---|---|---|
+| Rules only (**in-sample**) | 22/22 (20 values + 2 conflicts flagged) | 0 | 0 | 0 |
+| Model only | 18/22 (16 + 2 flagged) | 3 (one packet's participant counts) | 1 (a notice date) | 0 |
+| Rules + model (as the app combines them) | 22/22 (19 + 3 flagged) | 0 | 0 | 0 |
+
+- The quote check rejected 17 of 64 model values (quote not on the page, or value not in the quote).
+- 8 accepted model values were still wrong for their field: the quote was real, but it belonged to a
+  different field (e.g. a date that is not the notice date). The quote check cannot catch this. In
+  the combined run these surface as conflicts for a person, not as wrong values — one field
+  (a notice date) became a flagged conflict because of it.
+- Median 81 s per document on a MacBook Air M1 (11 documents): too slow to run interactively.
+- On these packets the model adds nothing over the rules. Whether it helps on layouts the rules
+  have never seen is **untested** — that needs held-out packets.

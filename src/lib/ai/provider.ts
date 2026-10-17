@@ -58,7 +58,7 @@ export class DeterministicProvider implements AIProvider {
 
 export const LLM_MAX_CONFIDENCE = 0.6;
 
-function squash(s: string) {
+export function squash(s: string) {
   return normalizeText(s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
@@ -101,6 +101,37 @@ export function groundLlmValue(
   };
 }
 
+export interface ChatConfig {
+  baseUrl: string;
+  model: string;
+  apiKey?: string;
+  fetchImpl?: typeof fetch;
+}
+
+/** One deterministic (temperature 0) JSON-mode call to an OpenAI-compatible /chat/completions endpoint. */
+export async function chatJson(cfg: ChatConfig, prompt: string): Promise<unknown> {
+  const res = await (cfg.fetchImpl ?? fetch)(`${cfg.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}) },
+    body: JSON.stringify({ model: cfg.model, temperature: 0, response_format: { type: "json_object" }, messages: [{ role: "user", content: prompt }] }),
+  });
+  if (!res.ok) throw new Error(`LLM endpoint returned ${res.status}`);
+  const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  try {
+    return JSON.parse(body.choices?.[0]?.message?.content ?? "{}");
+  } catch {
+    throw new Error("LLM response was not valid JSON");
+  }
+}
+
+/** The configured language-model endpoint, or null when the product runs without one. */
+export function chatConfig(): ChatConfig | null {
+  const base = process.env.AI_BASE_URL;
+  const model = process.env.AI_MODEL;
+  if (process.env.AI_PROVIDER !== "openai_compatible" || !base || !model) return null;
+  return { baseUrl: base, model, apiKey: process.env.AI_API_KEY || undefined };
+}
+
 export class OpenAICompatibleProvider extends DeterministicProvider {
   readonly mode = "llm" as const;
   readonly label: string;
@@ -122,19 +153,10 @@ Rules: Only report a value that is explicitly written in the text. Do not infer,
 For every value, copy the exact supporting text as "quote" and give the page number.
 Return JSON: {"items":[{"field":"<key>","value":"<value>","quote":"<exact text>","page":<n>}]}. Omit fields that are not stated.
 Fields:\n${fields}\n\nDocument:\n${docs}`;
-    const res = await this.fetchImpl(`${this.baseUrl.replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}) },
-      body: JSON.stringify({ model: this.model, temperature: 0, response_format: { type: "json_object" }, messages: [{ role: "user", content: prompt }] }),
-    });
-    if (!res.ok) throw new Error(`LLM endpoint returned ${res.status}`);
-    const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    let items: { field: string; value: string; quote: string; page: number }[] = [];
-    try {
-      items = JSON.parse(body.choices?.[0]?.message?.content ?? "{}").items ?? [];
-    } catch {
-      throw new Error("LLM response was not valid JSON");
-    }
+    const answer = (await chatJson({ baseUrl: this.baseUrl, model: this.model, apiKey: this.apiKey, fetchImpl: this.fetchImpl }, prompt)) as {
+      items?: { field: string; value: string; quote: string; page: number }[];
+    };
+    const items = answer.items ?? [];
     const out: ExtractionResult = { candidates: [], rejected: [] };
     for (const item of Array.isArray(items) ? items.slice(0, 200) : []) {
       if (typeof item?.value !== "string" || typeof item?.quote !== "string") continue;
@@ -152,11 +174,6 @@ export function aiStatus(): { mode: "deterministic" | "llm"; label: string } {
 }
 
 export function getProvider(): AIProvider {
-  const kind = process.env.AI_PROVIDER;
-  const base = process.env.AI_BASE_URL;
-  const model = process.env.AI_MODEL;
-  if (kind === "openai_compatible" && base && model) {
-    return new OpenAICompatibleProvider(base, model, process.env.AI_API_KEY || undefined);
-  }
-  return new DeterministicProvider();
+  const cfg = chatConfig();
+  return cfg ? new OpenAICompatibleProvider(cfg.baseUrl, cfg.model, cfg.apiKey) : new DeterministicProvider();
 }
