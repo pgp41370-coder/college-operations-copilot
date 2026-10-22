@@ -1,4 +1,6 @@
-# College Operations Copilot
+# Evidentra
+
+*(formerly “College Operations Copilot”)*
 
 **Activity Documentation Automation**: a web application that helps faculty turn an event's notice, attendance sheet, photographs and details into the institution's standard **Activity Report**, **Detailed Report**, **Attendance Summary** and an auditable **evidence package**. Every extracted value records which document and page it came from. Faculty review and approve the output; nothing is approved automatically.
 

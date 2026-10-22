@@ -6,6 +6,7 @@
  */
 import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "pdf-lib";
 import type { ActivityReportContent, AttendanceSummaryContent, DetailedReportContent } from "../reports/build";
+import { APP_NAME } from "../brand";
 
 const A4: [number, number] = [595.28, 841.89];
 const MARGIN = 50;
@@ -152,7 +153,7 @@ async function finish(w: Writer, title: string): Promise<Uint8Array> {
     w.text(`Note: ${w.replaced} character(s) could not be shown in this PDF font and appear as "?". The DOCX export contains the original text.`, { size: 8 });
   }
   w.doc.setTitle(title);
-  w.doc.setProducer("College Operations Copilot");
+  w.doc.setProducer(APP_NAME);
   return w.doc.save();
 }
 

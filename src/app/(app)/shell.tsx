@@ -35,6 +35,7 @@ import {
   STATUS_LABELS,
   StatusBadge,
 } from "@/components/ui";
+import { APP_MARK, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -70,15 +71,15 @@ function Logo({ compact }: { compact?: boolean }) {
       className="focus-ring flex min-w-0 items-center gap-2.5 rounded-md"
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-brand-strong text-[12px] font-bold text-white shadow-sm">
-        CO
+        {APP_MARK}
       </span>
       {!compact && (
         <span className="min-w-0 leading-tight">
           <span className="block truncate text-[13.5px] font-semibold tracking-tight">
-            College Operations Copilot
+            {APP_NAME}
           </span>
           <span className="block truncate text-[11px] text-muted">
-            Evidence-grounded institutional operations
+            {APP_TAGLINE}
           </span>
         </span>
       )}

@@ -3,6 +3,7 @@ import { CheckCircle2, FileSearch, ScanText, ShieldCheck, UserCheck } from "luci
 import { currentUser } from "@/lib/server/auth";
 import { Notice, PRIVACY_NOTICE } from "@/components/ui";
 import { LoginForm } from "./login-form";
+import { APP_MARK, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in" };
@@ -23,10 +24,10 @@ export default async function LoginPage() {
         <div aria-hidden className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
         <div aria-hidden className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-brand opacity-30 blur-3xl" />
         <div className="relative flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-[13px] font-bold ring-1 ring-white/20">CO</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-[13px] font-bold ring-1 ring-white/20">{APP_MARK}</span>
           <span className="leading-tight">
-            <span className="block text-[14px] font-semibold">College Operations Copilot</span>
-            <span className="block text-[12px] text-white/60">Evidence-grounded institutional operations</span>
+            <span className="block text-[14px] font-semibold">{APP_NAME}</span>
+            <span className="block text-[12px] text-white/60">{APP_TAGLINE}</span>
           </span>
         </div>
         <div className="relative mt-auto max-w-lg">
@@ -55,9 +56,9 @@ export default async function LoginPage() {
       <section className="flex items-center justify-center px-5 py-12">
         <div className="anim-page w-full max-w-sm">
           <div className="mb-8 lg:hidden">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-[13px] font-bold text-white">CO</span>
-            <p className="mt-3 text-[15px] font-semibold">College Operations Copilot</p>
-            <p className="t-meta">Evidence-grounded institutional operations</p>
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-[13px] font-bold text-white">{APP_MARK}</span>
+            <p className="mt-3 text-[15px] font-semibold">{APP_NAME}</p>
+            <p className="t-meta">{APP_TAGLINE}</p>
           </div>
           <h2 className="t-page">Sign in</h2>
           <p className="t-meta mt-1">Use the account your administrator created for you.</p>

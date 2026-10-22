@@ -8,6 +8,7 @@
 import { PDFDocument } from "pdf-lib";
 import type { TemplateDefinition } from "../templates/schema";
 import { addImagePage, sectionPagePdf } from "./pdf";
+import { APP_NAME } from "../brand";
 
 export interface PacketSource {
   id: string;
@@ -65,7 +66,7 @@ export async function buildPacketPdf(
     await appendPdf(out, await sectionPagePdf("Files not included", skipped));
   }
   out.setTitle("Activity packet");
-  out.setProducer("College Operations Copilot");
+  out.setProducer(APP_NAME);
   return { bytes: await out.save(), skipped };
 }
 

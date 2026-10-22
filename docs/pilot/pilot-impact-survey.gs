@@ -291,7 +291,8 @@ function updateImpactSummary() {
   if (rev.length) table.push([`HoD/IQAC rated pilot reports ${r1(hQual)}/5 vs manual; ${hAdopt}/${rev.length} recommended department adoption`, '', '']);
 
   out.clear();
-  out.getRange(1, 1, table.length, 3).setValues(table.map((r) => [r[0], r[1], r[2]]));
+  // plain text, so Sheets does not turn "1/5" into a date or "94%" into 0.94
+  out.getRange(1, 1, table.length, 3).setNumberFormat('@').setValues(table.map((r) => [String(r[0]), String(r[1]), String(r[2])]));
   out.getRange(1, 1, 1, 3).setFontWeight('bold');
   out.setColumnWidth(1, 520).setColumnWidth(2, 140).setColumnWidth(3, 380);
   out.getRange(1, 1, table.length, 3).setWrap(true);

@@ -17,6 +17,7 @@ import {
   WidthType,
 } from "docx";
 import type { ActivityReportContent, AttendanceSummaryContent, DetailedReportContent } from "../reports/build";
+import { APP_NAME } from "../brand";
 
 const FONT = "Times New Roman";
 
@@ -59,7 +60,7 @@ function footer(text: string) {
 
 async function pack(children: (Paragraph | Table)[], footerText: string): Promise<Uint8Array> {
   const doc = new Document({
-    creator: "College Operations Copilot",
+    creator: APP_NAME,
     sections: [{ properties: { page: { margin: { top: 1000, bottom: 1000, left: 1100, right: 1100 } } }, footers: { default: footer(footerText) }, children }],
   });
   return new Uint8Array(await Packer.toBuffer(doc));
